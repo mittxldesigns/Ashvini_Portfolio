@@ -1,0 +1,223 @@
+@import url("https://fonts.googleapis.com/css2?family=Comforter+Brush&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(0, 153, 255, 0.15);
+  color: #0099ff;
+}
+
+::-moz-selection {
+  background: rgba(0, 153, 255, 0.15);
+  color: #0099ff;
+}
+
+/* Lock body and html to prevent any scrolling */
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: fixed;
+  background: #0e0e0e;
+  font-family: "Inter", sans-serif;
+}
+
+/* Main viewport - fixed black background */
+.viewport {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  touch-action: none;
+  background: #0e0e0e;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Grid container */
+.grid {
+  position: absolute;
+  display: grid;
+  /* 3×3 pattern of 5×5 grids = 15×15 total tiles */
+  grid-template-columns: repeat(15, 220px);
+  grid-template-rows: repeat(15, 220px);
+  will-change: transform;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  perspective: 1000px;
+  -webkit-perspective: 1000px;
+  transition: filter 0.2s ease-out;
+}
+
+.grid:active {
+  cursor: grabbing;
+}
+
+/* Individual tiles */
+.tile {
+  width: 300px;
+  height: 300px;
+  padding: 10px;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 14px;
+  pointer-events: none; /* critical for drag */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+.tile:hover img {
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Prevent text selection during drag */
+.viewport * {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Mobile specific fixes */
+@media (max-width: 768px) {
+  .tile {
+    width: 180px;
+    height: 180px;
+  }
+
+  .tile img {
+    border-radius: 12px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(15, 180px);
+    grid-template-rows: repeat(15, 180px);
+  }
+}
+
+.profile-pic {
+  border-radius: 10px;
+  overflow: hidden;
+  width: 90px;
+  height: 90px;
+  margin-bottom: 10px;
+}
+
+.profile-pic img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.home-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  color: white;
+  text-align: center;
+  padding: 20px;
+}
+.home-container {
+  position: absolute;
+
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 330px;
+}
+
+p {
+  font-size: 13px;
+  color: #888888;
+}
+
+.cta {
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 15px;
+  padding: 5px 10px;
+  background-color: #008fef;
+  margin: 20px 0;
+  border-radius: 5px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+.cta:hover {
+  background-color: #0077cc;
+}
+
+.para {
+  line-height: 18px;
+  text-align: center;
+}
+.position-1 {
+  position: absolute;
+  bottom: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+}
+.name {
+  font-size: 30px !important;
+  font-family: "Comforter Brush", cursive;
+  cursor: pointer;
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 400;
+  user-select: none;
+  text-shadow: 0 0 5px rgb(14, 14, 14);
+}
+
+.headernav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100vw;
+  padding: 10px 40px;
+  z-index: 500;
+  /* background: rgba(14, 14, 14, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px); */
+}
+
+.icon-pic {
+  border-radius: 50%;
+  border: 2px solid #008fef;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+}
+
+.icon-pic img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
