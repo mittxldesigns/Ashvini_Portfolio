@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Comforter+Brush&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
-
 /* Reset and base styles */
 * {
   margin: 0;
@@ -31,89 +29,161 @@ body {
 /* Main viewport - fixed black background */
 .viewport {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   overflow: hidden;
   touch-action: none;
   background: #0e0e0e;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Grid container */
-.grid {
-  position: absolute;
-  display: grid;
-  /* 3×3 pattern of 5×5 grids = 15×15 total tiles */
-  grid-template-columns: repeat(15, 220px);
-  grid-template-rows: repeat(15, 220px);
-  will-change: transform;
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  perspective: 1000px;
-  -webkit-perspective: 1000px;
-  transition: filter 0.2s ease-out;
-}
-
-.grid:active {
-  cursor: grabbing;
-}
-
-/* Individual tiles */
-.tile {
-  width: 300px;
-  height: 300px;
-  padding: 10px;
-  box-sizing: border-box;
-  cursor: pointer;
-}
-
-.tile img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 14px;
-  pointer-events: none; /* critical for drag */
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-user-drag: none;
-  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-
-.tile:hover img {
-  transform: scale(1.05);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
-
-/* Prevent text selection during drag */
-.viewport * {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Mobile specific fixes */
-@media (max-width: 768px) {
-  .tile {
-    width: 180px;
-    height: 180px;
+.viewport.is-dragging {
+  cursor: grabbing;
+}
+
+/* Only the grid is a GPU layer; tiles are plain children of it. */
+.grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+  contain: layout style;
+}
+
+.tile {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.grid.is-ready .tile {
+  animation: tile-in 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+@keyframes tile-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tile-title {
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  transform: translate(-50%, 6px);
+  width: max-content;
+  max-width: 120%;
+  font-size: 12px;
+  color: #bbbbbb;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+@media (hover: hover) {
+  .viewport:not(.is-dragging) .tile:hover img {
+    transform: scale(1.06);
   }
 
-  .tile img {
-    border-radius: 12px;
+  .viewport:not(.is-dragging) .tile:hover .tile-title {
+    opacity: 1;
+    transform: translate(-50%, 0);
   }
+}
 
-  .grid {
-    grid-template-columns: repeat(15, 180px);
-    grid-template-rows: repeat(15, 180px);
+.grid-loader {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: #777777;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.grid-loader.is-hidden {
+  opacity: 0;
+}
+
+.grid-loader-ring {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-top-color: #008fef;
+  animation: spin 0.8s linear infinite;
+}
+
+.grid-loader.is-hidden .grid-loader-ring {
+  animation: none;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.grid-hint {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(20, 20, 20, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #999999;
+  font-size: 12px;
+  pointer-events: none;
+  animation: hint 4.5s ease 1.2s both;
+}
+
+@keyframes hint {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  12%,
+  80% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grid.is-ready .tile {
+    animation: none;
+    opacity: 1;
   }
 }
 
@@ -295,12 +365,94 @@ p {
   color: #cccccc;
 }
 
-.detail-cover {
+.detail-cover-wrap {
+  flex-shrink: 0;
   width: 100%;
-  max-width: 640px;
-  border-radius: 14px;
-  object-fit: cover;
+  max-width: 720px;
+  aspect-ratio: 1920 / 986;
   margin-bottom: 24px;
+  background: center / contain no-repeat;
+  animation: cover-in 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes cover-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.detail-cover {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.detail-cover.is-loaded {
+  opacity: 1;
+}
+
+.reveal {
+  animation: reveal 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.case-studies {
+  width: 100%;
+  max-width: 520px;
+  margin-bottom: 32px;
+  text-align: left;
+}
+
+.case-studies h2 {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #666666;
+  margin-bottom: 10px;
+}
+
+.case-studies a {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: #dddddd;
+  font-size: 14px;
+  text-decoration: none;
+  transition: color 0.2s ease, padding 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.case-studies a:hover {
+  color: #008fef;
+  padding-left: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .detail-cover-wrap {
+    animation: none;
+  }
 }
 
 .detail-description {

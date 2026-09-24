@@ -1,9 +1,14 @@
-import React from "react";
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 
-import batla from "../assets/z6reg6szut7ouitceg1h.avif";
+import batla from "../assets/avatar.webp";
+import { preloadThumbs } from "../data/projects.js";
 
 function Home() {
+  useEffect(() => {
+    preloadThumbs();
+  }, []);
+
   return (
     <>
       <div className="home-container">

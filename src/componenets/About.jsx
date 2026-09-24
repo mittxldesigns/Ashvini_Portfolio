@@ -1,5 +1,6 @@
 import HeaderNav from "./HeaderNav.jsx";
-import batla from "../assets/z6reg6szut7ouitceg1h.avif";
+import batla from "../assets/avatar.webp";
+import { caseStudies } from "../data/projects.js";
 
 function About() {
   return (
@@ -41,6 +42,16 @@ function About() {
           <span>ZBrush</span>
           <span>Framer</span>
           <span>Webflow</span>
+        </div>
+
+        <div className="case-studies">
+          <h2>More case studies</h2>
+          {caseStudies.map((c) => (
+            <a key={c.url} href={c.url} target="_blank" rel="noreferrer">
+              <span>{c.title}</span>
+              <span aria-hidden="true">↗</span>
+            </a>
+          ))}
         </div>
 
         <div className="detail-actions">

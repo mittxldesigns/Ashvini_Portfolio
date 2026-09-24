@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import HeaderNav from "./HeaderNav.jsx";
 import { getProjectById } from "../data/projects.js";
@@ -5,6 +6,7 @@ import { getProjectById } from "../data/projects.js";
 export default function ProjectDetail() {
   const { id } = useParams();
   const project = getProjectById(id);
+  const [loaded, setLoaded] = useState(false);
 
   if (!project) {
     return (
@@ -20,34 +22,53 @@ export default function ProjectDetail() {
     );
   }
 
+  const isCaseStudy = project.roles.length > 0;
+  const meta = [
+    ["Role", project.roles.join(", ")],
+    ["Tools", project.tools.join(", ")],
+    ["Outcome", project.outcome],
+  ].filter(([, value]) => value);
+
   return (
     <>
       <HeaderNav />
       <div className="detail-page">
-        <img
-          className="detail-cover"
-          src={project.image}
-          alt={project.title}
-        />
-        <h1>{project.title}</h1>
-        <p className="para detail-description">{project.description}</p>
-
-        <div className="detail-meta">
-          <div>
-            <span className="detail-label">Role</span>
-            <span>{project.roles.join(", ")}</span>
-          </div>
-          <div>
-            <span className="detail-label">Tools</span>
-            <span>{project.tools.join(", ")}</span>
-          </div>
-          <div>
-            <span className="detail-label">Outcome</span>
-            <span>{project.outcome}</span>
-          </div>
+        <div
+          className="detail-cover-wrap"
+          style={
+            loaded ? undefined : { backgroundImage: `url(${project.thumb})` }
+          }
+        >
+          <img
+            className={`detail-cover${loaded ? " is-loaded" : ""}`}
+            src={project.image}
+            alt={project.title}
+            decoding="async"
+            onLoad={() => setLoaded(true)}
+          />
         </div>
+        <h1 className="reveal" style={{ "--d": "80ms" }}>
+          {project.title}
+        </h1>
+        <p
+          className="para detail-description reveal"
+          style={{ "--d": "160ms" }}
+        >
+          {project.description}
+        </p>
 
-        <div className="detail-actions">
+        {meta.length > 0 && (
+          <div className="detail-meta reveal" style={{ "--d": "240ms" }}>
+            {meta.map(([label, value]) => (
+              <div key={label}>
+                <span className="detail-label">{label}</span>
+                <span>{value}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="detail-actions reveal" style={{ "--d": "320ms" }}>
           {project.externalLink && (
             <a
               className="cta"
@@ -55,16 +76,18 @@ export default function ProjectDetail() {
               target="_blank"
               rel="noreferrer"
             >
-              View Spline Scene
+              {project.externalLink.includes("spline.design")
+                ? "View Spline Scene"
+                : "Visit Site"}
             </a>
           )}
           <a
-            className="cta cta-outline"
+            className={isCaseStudy ? "cta cta-outline" : "cta"}
             href={project.contraUrl}
             target="_blank"
             rel="noreferrer"
           >
-            View Case Study on Contra
+            {isCaseStudy ? "View Case Study on Contra" : "More work on Contra"}
           </a>
         </div>
 
