@@ -180,6 +180,11 @@ body {
   }
 }
 
+.tile.is-static {
+  animation: none;
+  opacity: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tile.is-in {
     animation: none;
@@ -291,8 +296,7 @@ p {
 }
 
 /* About & detail pages need normal scroll, unlike the drag-grid viewport */
-.about-page,
-.detail-page {
+.about-page {
   position: relative;
   overflow-y: auto;
   height: 100vh;
@@ -365,40 +369,6 @@ p {
   color: #cccccc;
 }
 
-.detail-cover-wrap {
-  flex-shrink: 0;
-  width: 100%;
-  max-width: 720px;
-  aspect-ratio: 1920 / 986;
-  margin-bottom: 24px;
-  background: center / contain no-repeat;
-  animation: cover-in 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes cover-in {
-  from {
-    opacity: 0;
-    transform: scale(0.94);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-.detail-cover {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  opacity: 0;
-  transition: opacity 0.5s ease;
-}
-
-.detail-cover.is-loaded {
-  opacity: 1;
-}
-
 .reveal {
   animation: reveal 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: var(--d, 0ms);
@@ -449,42 +419,9 @@ p {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .reveal,
-  .detail-cover-wrap {
+  .reveal {
     animation: none;
   }
-}
-
-.detail-description {
-  max-width: 520px;
-  margin-bottom: 24px;
-}
-
-.detail-meta {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 28px;
-  margin-bottom: 32px;
-}
-
-.detail-meta div {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  text-align: left;
-}
-
-.detail-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #666666;
-}
-
-.detail-meta span:last-child {
-  font-size: 13px;
-  color: #dddddd;
 }
 
 .detail-actions {
@@ -505,12 +442,490 @@ p {
   background-color: rgba(0, 143, 239, 0.1);
 }
 
-.back-link {
+
+
+/* ---------------------------------------------------------------------
+   Project page: edge strip | details | hero stage
+   --------------------------------------------------------------------- */
+
+.project {
+  --strip-w: 112px;
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: var(--strip-w) minmax(300px, 0.9fr) minmax(0, 1.25fr);
+  color: #ffffff;
+  overflow: hidden;
+}
+
+.project-missing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* Edge-pinned vertical gallery */
+.strip {
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 50vh 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.025), transparent);
+  -webkit-mask-image: linear-gradient(transparent, #000 18%, #000 82%, transparent);
+  mask-image: linear-gradient(transparent, #000 18%, #000 82%, transparent);
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  animation: strip-in 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.strip::-webkit-scrollbar {
+  display: none;
+}
+
+.strip.is-dragging {
+  cursor: grabbing;
+}
+
+.strip.is-dragging .strip-item {
+  pointer-events: none;
+}
+
+@keyframes strip-in {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+.strip-item {
+  --p: 0;
+  flex: none;
+  width: 76px;
+  height: 76px;
+  padding: 6px;
+  border: 0;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  opacity: calc(1 - var(--p) * 0.6);
+  transform: scale(calc(1 - var(--p) * 0.28));
+  transition: background 0.25s ease, box-shadow 0.35s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.strip-item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.strip-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.strip-item:hover img {
+  transform: scale(1.08);
+}
+
+.strip-item.is-active {
+  background: rgba(0, 143, 239, 0.12);
+  box-shadow: 0 0 0 2px #008fef, 0 8px 30px rgba(0, 143, 239, 0.25);
+}
+
+.strip-item:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
+/* Details column */
+.project-info {
+  grid-column: 2;
+  align-self: center;
+  max-height: 100vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: 96px 32px 48px 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.project-back {
   color: #888888;
   font-size: 13px;
   text-decoration: none;
+  margin-bottom: 36px;
+  transition: color 0.2s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.back-link:hover {
+.project-back:hover {
   color: #ffffff;
+  transform: translateX(-4px);
+}
+
+.project-index {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  color: #008fef;
+  margin-bottom: 14px;
+}
+
+.project-index span {
+  color: #555555;
+}
+
+.project-title {
+  font-size: clamp(28px, 3.2vw, 46px);
+  line-height: 1.08;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-bottom: 18px;
+}
+
+.project-desc {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #9a9a9a;
+  max-width: 440px;
+  margin-bottom: 28px;
+}
+
+.project-meta {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.project-meta dt {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #5f5f5f;
+  margin-bottom: 3px;
+}
+
+.project-meta dd {
+  font-size: 14px;
+  color: #dddddd;
+}
+
+.project-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+
+.project-actions .cta {
+  margin: 0;
+  padding: 9px 16px;
+  font-size: 14px;
+}
+
+.project-pager {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 440px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding-top: 16px;
+}
+
+.project-pager button {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: #666666;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.project-pager button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-pager button:hover {
+  color: #ffffff;
+}
+
+/* Hero stage */
+.project-stage {
+  --rx: 0deg;
+  --ry: 0deg;
+  grid-column: 3;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 48px 40px 0;
+  perspective: 1200px;
+}
+
+.project-glow {
+  position: absolute;
+  width: min(62vw, 78vh);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(0, 143, 239, 0.16) 0%,
+    rgba(120, 90, 255, 0.07) 38%,
+    transparent 68%
+  );
+  animation: glow 7s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    transform: scale(0.94);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+
+.project-hero {
+  position: relative;
+  width: min(100%, 78vh);
+  aspect-ratio: 1;
+}
+
+.project-hero.is-intro {
+  animation: hero-intro 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes hero-intro {
+  from {
+    opacity: 0;
+    transform: scale(0.86) translateY(20px);
+  }
+}
+
+.project-hero-motion {
+  position: absolute;
+  inset: 0;
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    translate: 0 -8px;
+  }
+  50% {
+    translate: 0 8px;
+  }
+}
+
+.project-hero-motion img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.project-hero-full {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.project-hero-full.is-loaded {
+  opacity: 1;
+}
+
+/* Tablet / phone: hero on top, details below, strip along the bottom edge */
+@media (max-width: 900px) {
+  .project {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding-bottom: 104px;
+  }
+
+  .project-stage {
+    order: -1;
+  }
+
+  body:has(.project) .headernav {
+    padding: 10px 20px;
+    background: linear-gradient(#0e0e0e 55%, transparent);
+  }
+
+  .strip {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    height: 96px;
+    flex-direction: row;
+    padding: 0 50vw;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-right: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(14, 14, 14, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
+    animation-name: strip-up;
+  }
+
+  @keyframes strip-up {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+  }
+
+  .strip-item {
+    width: 64px;
+    height: 64px;
+  }
+
+  .project-stage {
+    flex: none;
+    padding: 64px 20px 0;
+  }
+
+  .project-glow {
+    width: 110vw;
+  }
+
+  .project-hero {
+    width: min(86vw, 520px);
+  }
+
+  .project-info {
+    max-height: none;
+    overflow: visible;
+    padding: 28px 24px 24px;
+  }
+
+  .project-back {
+    margin-bottom: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .strip,
+  .project-hero.is-intro,
+  .project-hero-motion,
+  .project-glow {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   View transitions
+   --------------------------------------------------------------------- */
+
+::view-transition-old(root) {
+  animation: vt-out 260ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+::view-transition-new(root) {
+  animation: vt-in 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes vt-out {
+  to {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    transform: scale(1.015);
+  }
+}
+
+/* Shared render: tile <-> hero */
+::view-transition-group(hero) {
+  animation-duration: 720ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 10;
+}
+
+::view-transition-old(hero),
+::view-transition-new(hero) {
+  height: 100%;
+  object-fit: contain;
+  animation-duration: 720ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Switching projects from the strip: old render sinks away, new one rises */
+html[data-vt="swap"]::view-transition-group(hero) {
+  animation: none;
+}
+
+html[data-vt="swap"]::view-transition-old(hero) {
+  animation: hero-swap-out 320ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+html[data-vt="swap"]::view-transition-new(hero) {
+  animation: hero-swap-in 620ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
+}
+
+@keyframes hero-swap-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6%) scale(0.9);
+  }
+}
+
+@keyframes hero-swap-in {
+  from {
+    opacity: 0;
+    transform: translateY(8%) scale(0.92);
+  }
+}
+
+html[data-vt="swap"]::view-transition-old(root) {
+  animation-duration: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }

@@ -1,13 +1,13 @@
 import { useEffect } from "react";
-import { Link } from "react-router-dom";
-
-const batla = "/avatar.webp";
+import TransitionLink from "./TransitionLink.jsx";
 import { preloadThumbs } from "../data/projects.js";
 import {
   computeLayout,
   initialOrigin,
   visibleProjectIds,
 } from "../lib/gridLayout.js";
+
+const batla = "/avatar.webp";
 
 function Home() {
   // Warm the grid's first screen once this page has painted.
@@ -35,9 +35,9 @@ function Home() {
           <h3>Ashwani Kumar</h3>
           <p>Artist & 3D Designer</p>
 
-          <Link className="cta" to="/portfolio">
+          <TransitionLink className="cta" to="/portfolio">
             Enter Portfolio
-          </Link>
+          </TransitionLink>
         </div>
       </div>
 

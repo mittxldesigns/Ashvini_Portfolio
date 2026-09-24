@@ -1,13 +1,9 @@
-const avifThumbs = import.meta.glob("../assets/work/*-thumb.avif", {
-  eager: true,
-  import: "default",
-});
-const webpImages = import.meta.glob("../assets/work/*.webp", {
+const images = import.meta.glob("../assets/work/*.{avif,webp}", {
   eager: true,
   import: "default",
 });
 
-const asset = (map, name) => map[`../assets/work/${name}`];
+const asset = (name) => images[`../assets/work/${name}`];
 
 const CONTRA_PROFILE = "https://contra.com/ashvini_kmr?r=mittxldesigns";
 
@@ -108,9 +104,10 @@ export const projects = pieces.map((p, i) => ({
   externalLink: null,
   contraUrl: CONTRA_PROFILE,
   ...p,
-  thumbAvif: asset(avifThumbs, `${p.slug}-thumb.avif`),
-  thumbWebp: asset(webpImages, `${p.slug}-thumb.webp`),
-  image: asset(webpImages, `${p.slug}.webp`),
+  thumbAvif: asset(`${p.slug}-thumb.avif`),
+  thumbWebp: asset(`${p.slug}-thumb.webp`),
+  heroAvif: asset(`${p.slug}-hero.avif`),
+  heroWebp: asset(`${p.slug}-hero.webp`),
 }));
 
 // Contra case studies without a matching render in the grid.
@@ -215,4 +212,33 @@ export function preloadThumbs(priorityIds = []) {
   return Promise.all(first.map(loadThumb)).then(() =>
     Promise.all(rest.map(loadThumb))
   );
+}
+
+// --- Hero images ---------------------------------------------------------
+
+export function heroSrc(project) {
+  return avifSupported === false ? project.heroWebp : project.heroAvif;
+}
+
+const heroRequested = new Set();
+
+// Warm the hi-res hero (e.g. on hover) so a switch shows it immediately.
+export function preloadHero(project) {
+  if (!project || heroRequested.has(project.id)) return;
+  heroRequested.add(project.id);
+  avifCheck.then(() => {
+    const img = new Image();
+    img.decoding = "async";
+    img.src = heroSrc(project);
+  });
+}
+
+// Resolves once the project's thumb is decoded, so a transition can capture
+// it painted rather than blank.
+export function decodeThumb(project) {
+  return avifCheck.then(() => {
+    const img = new Image();
+    img.src = thumbSrc(project);
+    return img.decode().catch(() => {});
+  });
 }

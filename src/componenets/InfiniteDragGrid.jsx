@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   preloadThumbs,
@@ -13,6 +13,8 @@ import {
   visibleProjectIds,
   wrap,
 } from "../lib/gridLayout.js";
+import { gridState } from "../lib/gridState.js";
+import { tagSharedElement, withViewTransition } from "../lib/viewTransition.js";
 
 const EASE = 0.2; // fraction of remaining distance covered per 60fps frame
 const FRICTION = 0.94; // inertia decay per 60fps frame
@@ -26,9 +28,9 @@ export default function InfiniteDragGrid() {
   const [layout, setLayout] = useState(computeLayout);
   const [loaded, setLoaded] = useState(getLoadedIds);
 
-  // Centers a tile on first paint; later layouts keep the live position.
-  const [origin] = useState(() => initialOrigin(layout));
-  const position = useRef(null);
+  // First visit centers a tile; returning restores where the user left off.
+  const [origin] = useState(() => gridState.position ?? initialOrigin(layout));
+  const [intro] = useState(() => !gridState.visited);
 
   useEffect(() => {
     const off = onThumbLoaded((id) =>
@@ -42,6 +44,34 @@ export default function InfiniteDragGrid() {
     preloadThumbs(visibleProjectIds(layout, origin));
     return off;
     // Priority only matters for the first screen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Runs before paint (and before a view transition captures the new page):
+  // place the grid, then hand the shared "hero" name to the tile of the
+  // project we're returning from.
+  useLayoutEffect(() => {
+    gridState.visited = true;
+    const grid = gridRef.current;
+    grid.style.transform = `translate3d(${wrap(origin.x, layout.block)}px, ${wrap(origin.y, layout.block)}px, 0)`;
+    const id = gridState.returnToId;
+    gridState.returnToId = null;
+    if (id == null) return;
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    let best = null;
+    let bestD = Infinity;
+    grid.querySelectorAll(`.tile[data-id="${id}"] img`).forEach((img) => {
+      const r = img.getBoundingClientRect();
+      if (r.right < 0 || r.bottom < 0 || r.left > innerWidth || r.top > innerHeight) return;
+      const d = Math.hypot(r.left + r.width / 2 - cx, r.top + r.height / 2 - cy);
+      if (d < bestD) {
+        bestD = d;
+        best = img;
+      }
+    });
+    tagSharedElement(best, "hero");
+    // Mount-only: this is about the page we arrived from.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -73,7 +103,7 @@ export default function InfiniteDragGrid() {
       out.push(
         <div
           key={key}
-          className={isIn ? "tile is-in" : "tile"}
+          className={isIn ? (intro ? "tile is-in" : "tile is-in is-static") : "tile"}
           data-id={item.id}
           style={{ left: x, top: y, width: tile, height: tile, "--d": `${delay}ms` }}
         >
@@ -91,7 +121,7 @@ export default function InfiniteDragGrid() {
       );
     });
     return out;
-  }, [layout, origin, loaded]);
+  }, [layout, origin, loaded, intro]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -99,7 +129,7 @@ export default function InfiniteDragGrid() {
     if (!viewport || !grid) return;
 
     const { block } = layout;
-    const at = position.current ?? origin;
+    const at = gridState.position ?? origin;
     const s = {
       x: at.x,
       y: at.y,
@@ -113,6 +143,7 @@ export default function InfiniteDragGrid() {
       py: 0,
       lastT: 0,
       downId: null,
+      downImg: null,
       pointerId: null,
       drawnX: NaN,
       drawnY: NaN,
@@ -165,7 +196,9 @@ export default function InfiniteDragGrid() {
       s.py = e.clientY;
       s.lastT = e.timeStamp;
       s.pointerId = e.pointerId;
-      s.downId = e.target.closest(".tile")?.dataset.id ?? null;
+      const tileEl = e.target.closest(".tile");
+      s.downId = tileEl?.dataset.id ?? null;
+      s.downImg = tileEl?.querySelector("img") ?? null;
       viewport.setPointerCapture(e.pointerId);
     };
 
@@ -200,7 +233,10 @@ export default function InfiniteDragGrid() {
         s.vx = 0;
         s.vy = 0;
         if (e.type === "pointerup" && s.downId) {
-          navigate(`/portfolio/${s.downId}`);
+          const id = s.downId;
+          gridState.position = { x: s.tx, y: s.ty };
+          tagSharedElement(s.downImg, "hero");
+          withViewTransition("open", () => navigate(`/portfolio/${id}`));
         }
         return;
       }
@@ -255,7 +291,7 @@ export default function InfiniteDragGrid() {
 
     return () => {
       cancelAnimationFrame(raf);
-      position.current = { x: s.tx, y: s.ty };
+      gridState.position = { x: s.tx, y: s.ty };
       viewport.removeEventListener("pointerdown", onPointerDown);
       viewport.removeEventListener("pointermove", onPointerMove);
       viewport.removeEventListener("pointerup", onPointerUp);
@@ -279,7 +315,7 @@ export default function InfiniteDragGrid() {
         <span className="grid-loader-ring" />
         <span>Loading work</span>
       </div>
-      <p className="grid-hint">Drag, swipe or scroll to explore</p>
+      {intro && <p className="grid-hint">Drag, swipe or scroll to explore</p>}
     </div>
   );
 }
