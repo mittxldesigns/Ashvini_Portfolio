@@ -26,10 +26,14 @@
     </noscript>
     <style>
       html, body { background: #0e0e0e; }
+      html:not([data-route="home"]) .boot-shell { display: none; }
     </style>
+    <script>
+      if (location.pathname === "/") document.documentElement.dataset.route = "home";
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><!-- Static copy of Home so the first screen paints before the JS arrives; React replaces it on mount. Keep in sync with src/componenets/Home.jsx. --><div class="boot-shell" style="position: relative; width: 100%; min-height: 100vh"><div class="home-container"><div class="home-content"><div class="profile-pic"><img src="/avatar.webp" alt="Ashwani Kumar" /></div><h3>Ashwani Kumar</h3><p>Artist &amp; 3D Designer</p><a class="cta" href="/portfolio">Enter Portfolio</a></div></div><p class="para position-1">I'm a 3D artist focused on crafting intuitive, high-performance 3D experiences for Web3D and rendering. With expertise in modeling, texturing, and animation.</p></div></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
