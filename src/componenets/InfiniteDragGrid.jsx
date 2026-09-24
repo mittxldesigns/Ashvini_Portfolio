@@ -1,27 +1,10 @@
 import { useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { projects } from "../data/projects.js";
 
 const TILE_SIZE = 220;
 const GAP = 100;
 const GRID_SIZE = 7; // Reduced further for smoother performance
-
-// Auto-import images
-const imageModules = import.meta.glob(
-  "/src/assets/images/*.{jpg,jpeg,png,webp}",
-  { eager: true, import: "default" }
-);
-
-const images = Object.entries(imageModules)
-  .map(([path, src]) => {
-    const name = path.split("/").pop();
-    const id = parseInt(name.replace(/\D/g, ""), 10) || 1;
-    return {
-      id,
-      src,
-      path: `/portfolio/${id}`,
-    };
-  })
-  .sort((a, b) => a.id - b.id);
 
 export default function InfiniteDragGrid() {
   const gridRef = useRef(null);
@@ -43,8 +26,8 @@ export default function InfiniteDragGrid() {
       for (let repeatX = -1; repeatX <= 1; repeatX++) {
         for (let row = 0; row < GRID_SIZE; row++) {
           for (let col = 0; col < GRID_SIZE; col++) {
-            const index = (row * GRID_SIZE + col) % images.length;
-            const item = images[index];
+            const index = (row * GRID_SIZE + col) % projects.length;
+            const item = projects[index];
 
             const x = (repeatX * GRID_SIZE + col) * (TILE_SIZE + GAP);
             const y = (repeatY * GRID_SIZE + row) * (TILE_SIZE + GAP);
@@ -61,10 +44,10 @@ export default function InfiniteDragGrid() {
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (!isDragging.current) navigate(item.path);
+                  if (!isDragging.current) navigate(`/portfolio/${item.id}`);
                 }}
               >
-                <img src={item.src} alt="" draggable={false} />
+                <img src={item.image} alt={item.title} draggable={false} />
               </div>
             );
           }

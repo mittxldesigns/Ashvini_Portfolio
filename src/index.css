@@ -221,3 +221,146 @@ p {
   height: 100%;
   object-fit: cover;
 }
+
+/* About & detail pages need normal scroll, unlike the drag-grid viewport */
+.about-page,
+.detail-page {
+  position: relative;
+  overflow-y: auto;
+  height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+  color: #ffffff;
+  padding: 120px 24px 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.about-avatar {
+  width: 110px;
+  height: 110px;
+  border-radius: 12px;
+  object-fit: cover;
+  margin-bottom: 16px;
+}
+
+.about-title {
+  color: #008fef;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.about-stats {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 28px;
+}
+
+.about-stats div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.about-stats strong {
+  font-size: 20px;
+  color: #ffffff;
+}
+
+.about-stats span {
+  font-size: 12px;
+  color: #888888;
+}
+
+.about-bio {
+  max-width: 520px;
+  line-height: 20px;
+  margin-bottom: 28px;
+}
+
+.about-skills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  max-width: 520px;
+  margin-bottom: 32px;
+}
+
+.about-skills span {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: #cccccc;
+}
+
+.detail-cover {
+  width: 100%;
+  max-width: 640px;
+  border-radius: 14px;
+  object-fit: cover;
+  margin-bottom: 24px;
+}
+
+.detail-description {
+  max-width: 520px;
+  margin-bottom: 24px;
+}
+
+.detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 28px;
+  margin-bottom: 32px;
+}
+
+.detail-meta div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+
+.detail-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #666666;
+}
+
+.detail-meta span:last-child {
+  font-size: 13px;
+  color: #dddddd;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.cta-outline {
+  background-color: transparent;
+  border: 1px solid #008fef;
+  color: #008fef;
+}
+
+.cta-outline:hover {
+  background-color: rgba(0, 143, 239, 0.1);
+}
+
+.back-link {
+  color: #888888;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: #ffffff;
+}

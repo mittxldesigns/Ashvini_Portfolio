@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars -- used via JSX (<motion.div>), which base no-unused-vars can't see without eslint-plugin-react
 import { motion } from "framer-motion";
 
 export default function PageTransition({ children }) {
