@@ -1,16 +1,16 @@
-import imgNothingHeadphones from "../assets/images/CMF_Headphones_Pro_-_Copy1-1920x1027.png";
-import imgTeenageEngineering from "../assets/images/HEAD_ANIMATION1-1920x1027.png";
-import imgMebrafino from "../assets/images/Helix_Animation1-1920x1027.png";
-import imgSplineCompilation from "../assets/images/Patek_Phillipe1-1920x1027.png";
-import imgRenderingShowcase from "../assets/images/Untitled-4.png";
-import imgHeyGen from "../assets/images/Untitled1-1920x1027-1.png";
-import imgAthleticPower from "../assets/images/Untitled1-1920x1027.png";
-import imgAeosLabs from "../assets/images/img1.jpg";
-import imgWorklouder from "../assets/images/img2.jpg";
-import imgHeroBoxes from "../assets/images/img3.jpg";
-import imgAiConceptSphere from "../assets/images/img4.jpg";
-import imgZamnStudios from "../assets/images/img5.jpg";
-import imgCmfBottle from "../assets/images/img6.png";
+import imgNothingHeadphones from "../assets/images/CMF_Headphones_Pro_-_Copy1-1920x1027.webp";
+import imgTeenageEngineering from "../assets/images/HEAD_ANIMATION1-1920x1027.webp";
+import imgMebrafino from "../assets/images/Helix_Animation1-1920x1027.webp";
+import imgSplineCompilation from "../assets/images/Patek_Phillipe1-1920x1027.webp";
+import imgRenderingShowcase from "../assets/images/Untitled-4.webp";
+import imgHeyGen from "../assets/images/Untitled1-1920x1027-1.webp";
+import imgAthleticPower from "../assets/images/Untitled1-1920x1027.webp";
+import imgAeosLabs from "../assets/images/img1.webp";
+import imgWorklouder from "../assets/images/img2.webp";
+import imgHeroBoxes from "../assets/images/img3.webp";
+import imgAiConceptSphere from "../assets/images/img4.webp";
+import imgZamnStudios from "../assets/images/img5.webp";
+import imgCmfBottle from "../assets/images/img6.webp";
 
 // Sourced from https://contra.com/ashvini_kmr — case studies, newest first.
 export const projects = [
