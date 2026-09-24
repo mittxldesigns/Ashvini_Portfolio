@@ -1,12 +1,27 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 
-import batla from "../assets/avatar.webp";
+const batla = "/avatar.webp";
 import { preloadThumbs } from "../data/projects.js";
+import {
+  computeLayout,
+  initialOrigin,
+  visibleProjectIds,
+} from "../lib/gridLayout.js";
 
 function Home() {
+  // Warm the grid's first screen once this page has painted.
   useEffect(() => {
-    preloadThumbs();
+    const start = () => {
+      const layout = computeLayout();
+      preloadThumbs(visibleProjectIds(layout, initialOrigin(layout)));
+    };
+    if ("requestIdleCallback" in window) {
+      const id = requestIdleCallback(start, { timeout: 1500 });
+      return () => cancelIdleCallback(id);
+    }
+    const t = setTimeout(start, 300);
+    return () => clearTimeout(t);
   }, []);
 
   return (

@@ -1,11 +1,11 @@
-// eslint-disable-next-line no-unused-vars -- used via JSX (<motion.div>), which base no-unused-vars can't see without eslint-plugin-react
-import { motion } from "framer-motion";
+// eslint-disable-next-line no-unused-vars -- used via JSX (<m.div>), which base no-unused-vars can't see without eslint-plugin-react
+import { m } from "framer-motion";
 
 export default function PageTransition({ children }) {
   return (
     <>
       {/* Black overlay that fades in then out */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 0 }}
         exit={{ opacity: 1 }}
@@ -23,7 +23,7 @@ export default function PageTransition({ children }) {
       />
 
       {/* Page content that fades in after overlay */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -39,7 +39,7 @@ export default function PageTransition({ children }) {
         }}
       >
         {children}
-      </motion.div>
+      </m.div>
     </>
   );
 }

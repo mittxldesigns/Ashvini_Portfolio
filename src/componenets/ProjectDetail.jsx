@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import HeaderNav from "./HeaderNav.jsx";
-import { getProjectById } from "../data/projects.js";
+import { getProjectById, thumbSrc } from "../data/projects.js";
 
 export default function ProjectDetail() {
   const { id } = useParams();
@@ -36,7 +36,7 @@ export default function ProjectDetail() {
         <div
           className="detail-cover-wrap"
           style={
-            loaded ? undefined : { backgroundImage: `url(${project.thumb})` }
+            loaded ? undefined : { backgroundImage: `url(${thumbSrc(project)})` }
           }
         >
           <img

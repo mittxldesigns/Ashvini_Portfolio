@@ -1,52 +1,49 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { projects, preloadThumbs, areThumbsReady } from "../data/projects.js";
+import {
+  preloadThumbs,
+  getLoadedIds,
+  onThumbLoaded,
+  thumbSrc,
+} from "../data/projects.js";
+import {
+  computeLayout,
+  initialOrigin,
+  forEachTile,
+  visibleProjectIds,
+  wrap,
+} from "../lib/gridLayout.js";
 
 const EASE = 0.2; // fraction of remaining distance covered per 60fps frame
 const FRICTION = 0.94; // inertia decay per 60fps frame
 const MAX_VELOCITY = 45;
 const CLICK_SLOP = 6; // px of movement before a press counts as a drag
 
-function computeLayout() {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const mobile = vw < 768;
-  const tile = mobile ? 170 : 280;
-  const step = mobile ? 210 : 340;
-  // One repeating block must cover the viewport. Tile i shows item
-  // (row*size + col) % n, so skip sizes where vertical neighbours — inside
-  // the block (diff = size) or across its seam (diff = size*(size-1)) —
-  // would land on the same item.
-  const n = projects.length;
-  let size = Math.max(6, Math.ceil(Math.max(vw, vh) / step) + 1);
-  while (size % n === 0 || (size * (size - 1)) % n === 0) size += 1;
-  return { vw, vh, tile, step, size, block: size * step };
-}
-
-const wrap = (v, block) => ((v % block) + block) % block;
-
 export default function InfiniteDragGrid() {
   const navigate = useNavigate();
   const viewportRef = useRef(null);
   const gridRef = useRef(null);
   const [layout, setLayout] = useState(computeLayout);
-  const [ready, setReady] = useState(areThumbsReady);
+  const [loaded, setLoaded] = useState(getLoadedIds);
 
   // Centers a tile on first paint; later layouts keep the live position.
-  const [origin] = useState(() => ({
-    x: (layout.vw - layout.tile) / 2,
-    y: (layout.vh - layout.tile) / 2,
-  }));
+  const [origin] = useState(() => initialOrigin(layout));
   const position = useRef(null);
 
   useEffect(() => {
-    if (ready) return;
-    let alive = true;
-    preloadThumbs().then(() => alive && setReady(true));
-    return () => {
-      alive = false;
-    };
-  }, [ready]);
+    const off = onThumbLoaded((id) =>
+      setLoaded((prev) => (prev.has(id) ? prev : new Set(prev).add(id)))
+    );
+    // Catch anything that finished between the initial render and now.
+    setLoaded((prev) => {
+      const now = getLoadedIds();
+      return now.size === prev.size ? prev : now;
+    });
+    preloadThumbs(visibleProjectIds(layout, origin));
+    return off;
+    // Priority only matters for the first screen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     let t;
@@ -62,54 +59,39 @@ export default function InfiniteDragGrid() {
   }, []);
 
   const tiles = useMemo(() => {
-    const { size, step, tile, block, vw, vh } = layout;
+    const { step, tile, block, vw, vh } = layout;
     const ox = wrap(origin.x, block);
     const oy = wrap(origin.y, block);
     const out = [];
-    // 2x2 copies of the block are enough: the grid offset is wrapped into
-    // [0, block), so copies at -block and 0 always cover the viewport.
-    for (let ry = -1; ry <= 0; ry++) {
-      for (let rx = -1; rx <= 0; rx++) {
-        for (let row = 0; row < size; row++) {
-          for (let col = 0; col < size; col++) {
-            const item = projects[(row * size + col) % projects.length];
-            const x = (rx * size + col) * step;
-            const y = (ry * size + row) * step;
-            const dist = Math.hypot(
-              ox + x + tile / 2 - vw / 2,
-              oy + y + tile / 2 - vh / 2
-            );
-            const delay = Math.min((dist / step) * 70, 900);
-            out.push(
-              <div
-                key={`${rx}:${ry}:${row}:${col}`}
-                className="tile"
-                data-id={item.id}
-                style={{
-                  left: x,
-                  top: y,
-                  width: tile,
-                  height: tile,
-                  "--d": `${delay}ms`,
-                }}
-              >
-                <img
-                  src={item.thumb}
-                  alt={item.title}
-                  width={tile}
-                  height={tile}
-                  draggable={false}
-                  decoding="async"
-                />
-                <span className="tile-title">{item.title}</span>
-              </div>
-            );
-          }
-        }
-      }
-    }
+    forEachTile(layout, ({ key, item, x, y }) => {
+      const dist = Math.hypot(
+        ox + x + tile / 2 - vw / 2,
+        oy + y + tile / 2 - vh / 2
+      );
+      const delay = Math.min((dist / step) * 60, 600);
+      const isIn = loaded.has(item.id);
+      out.push(
+        <div
+          key={key}
+          className={isIn ? "tile is-in" : "tile"}
+          data-id={item.id}
+          style={{ left: x, top: y, width: tile, height: tile, "--d": `${delay}ms` }}
+        >
+          {isIn && (
+            <img
+              src={thumbSrc(item)}
+              alt={item.title}
+              width={tile}
+              height={tile}
+              draggable={false}
+            />
+          )}
+          <span className="tile-title">{item.title}</span>
+        </div>
+      );
+    });
     return out;
-  }, [layout, origin]);
+  }, [layout, origin, loaded]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -287,10 +269,13 @@ export default function InfiniteDragGrid() {
 
   return (
     <div ref={viewportRef} className="viewport">
-      <div ref={gridRef} className={`grid${ready ? " is-ready" : ""}`}>
+      <div ref={gridRef} className="grid">
         {tiles}
       </div>
-      <div className={`grid-loader${ready ? " is-hidden" : ""}`} aria-hidden={ready}>
+      <div
+        className={`grid-loader${loaded.size ? " is-hidden" : ""}`}
+        aria-hidden={loaded.size > 0}
+      >
         <span className="grid-loader-ring" />
         <span>Loading work</span>
       </div>

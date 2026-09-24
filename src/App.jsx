@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, LazyMotion, domAnimation } from "framer-motion";
 
 import InfiniteDragGrid from "./componenets/InfiniteDragGrid.jsx";
 import Home from "./componenets/Home.jsx";
@@ -12,7 +12,7 @@ function AnimatedRoutes() {
   const location = useLocation();
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="wait" initial={false}>
       <Routes location={location} key={location.pathname}>
         <Route
           path="/"
@@ -54,9 +54,11 @@ function AnimatedRoutes() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AnimatedRoutes />
-    </BrowserRouter>
+    <LazyMotion features={domAnimation} strict>
+      <BrowserRouter>
+        <AnimatedRoutes />
+      </BrowserRouter>
+    </LazyMotion>
   );
 }
 

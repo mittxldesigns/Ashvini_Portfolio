@@ -1,14 +1,13 @@
-const thumbs = import.meta.glob("../assets/work/*-thumb.webp", {
+const avifThumbs = import.meta.glob("../assets/work/*-thumb.avif", {
   eager: true,
   import: "default",
 });
-const fulls = import.meta.glob("../assets/work/*.webp", {
+const webpImages = import.meta.glob("../assets/work/*.webp", {
   eager: true,
   import: "default",
 });
 
-const thumb = (slug) => thumbs[`../assets/work/${slug}-thumb.webp`];
-const full = (slug) => fulls[`../assets/work/${slug}.webp`];
+const asset = (map, name) => map[`../assets/work/${name}`];
 
 const CONTRA_PROFILE = "https://contra.com/ashvini_kmr?r=mittxldesigns";
 
@@ -109,8 +108,9 @@ export const projects = pieces.map((p, i) => ({
   externalLink: null,
   contraUrl: CONTRA_PROFILE,
   ...p,
-  thumb: thumb(p.slug),
-  image: full(p.slug),
+  thumbAvif: asset(avifThumbs, `${p.slug}-thumb.avif`),
+  thumbWebp: asset(webpImages, `${p.slug}-thumb.webp`),
+  image: asset(webpImages, `${p.slug}.webp`),
 }));
 
 // Contra case studies without a matching render in the grid.
@@ -149,31 +149,64 @@ export function getProjectById(id) {
   return projects.find((p) => p.id === Number(id));
 }
 
-let thumbsReady = false;
-let thumbsPromise = null;
+// --- Thumbnail loading -------------------------------------------------
 
-export function areThumbsReady() {
-  return thumbsReady;
+const AVIF_PROBE =
+  "data:image/avif;base64,AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZk1BMUIAAADybWV0YQAAAAAAAAAoaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAGxpYmF2aWYAAAAADnBpdG0AAAAAAAEAAAAeaWxvYwAAAABEAAABAAEAAAABAAABGgAAAB0AAAAoaWluZgAAAAAAAQAAABppbmZlAgAAAAABAABhdjAxQ29sb3IAAAAAamlwcnAAAABLaXBjbwAAABRpc3BlAAAAAAAAAAIAAAACAAAAEHBpeGkAAAAAAwgICAAAAAxhdjFDgQ0MAAAAABNjb2xybmNseAACAAIAAYAAAAAXaXBtYQAAAAAAAAABAAEEAQKDBAAAACVtZGF0EgAKCBgANogQEAwgMg8f8D///8WfhwB8+ErK42A=";
+
+let avifSupported = null;
+const avifCheck = new Promise((resolve) => {
+  const img = new Image();
+  img.onload = () => resolve((avifSupported = img.width > 0));
+  img.onerror = () => resolve((avifSupported = false));
+  img.src = AVIF_PROBE;
+});
+
+// Only meaningful once an item has loaded (loading waits for the AVIF check).
+export function thumbSrc(project) {
+  return avifSupported ? project.thumbAvif : project.thumbWebp;
 }
 
-// Fetch + decode every grid thumb once so the grid can reveal all at once.
-export function preloadThumbs() {
-  if (!thumbsPromise) {
-    const decodeAll = Promise.all(
-      projects.map(
-        (p) =>
-          new Promise((resolve) => {
-            const img = new Image();
-            img.decoding = "async";
-            img.src = p.thumb;
-            img.decode().then(resolve, resolve);
-          })
-      )
+const loadedIds = new Set();
+const pending = new Map();
+const listeners = new Set();
+
+export function getLoadedIds() {
+  return new Set(loadedIds);
+}
+
+export function onThumbLoaded(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
+function loadThumb(project) {
+  if (!pending.has(project.id)) {
+    const p = avifCheck.then(
+      () =>
+        new Promise((resolve) => {
+          const img = new Image();
+          img.decoding = "async";
+          img.src = thumbSrc(project);
+          img.decode().then(resolve, resolve);
+        })
     );
-    const timeout = new Promise((resolve) => setTimeout(resolve, 5000));
-    thumbsPromise = Promise.race([decodeAll, timeout]).then(() => {
-      thumbsReady = true;
-    });
+    pending.set(
+      project.id,
+      p.then(() => {
+        loadedIds.add(project.id);
+        listeners.forEach((fn) => fn(project.id));
+      })
+    );
   }
-  return thumbsPromise;
+  return pending.get(project.id);
+}
+
+// Loads the given ids first (in parallel), then everything else.
+export function preloadThumbs(priorityIds = []) {
+  const first = priorityIds.map(getProjectById).filter(Boolean);
+  const rest = projects.filter((p) => !priorityIds.includes(p.id));
+  return Promise.all(first.map(loadThumb)).then(() =>
+    Promise.all(rest.map(loadThumb))
+  );
 }

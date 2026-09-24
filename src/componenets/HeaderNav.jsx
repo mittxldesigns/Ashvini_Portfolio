@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import batla from "../assets/avatar.webp";
+const batla = "/avatar.webp";
 
 function HeaderNav() {
   return (

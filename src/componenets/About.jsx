@@ -1,6 +1,7 @@
 import HeaderNav from "./HeaderNav.jsx";
-import batla from "../assets/avatar.webp";
 import { caseStudies } from "../data/projects.js";
+
+const batla = "/avatar.webp";
 
 function About() {
   return (
