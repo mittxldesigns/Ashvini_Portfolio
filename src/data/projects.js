@@ -187,8 +187,14 @@ function loadThumb(project) {
         new Promise((resolve) => {
           const img = new Image();
           img.decoding = "async";
+          // Resolve on load, not decode: browsers can defer decode (e.g. in
+          // background tabs), which would stall the queue behind it.
+          img.onload = () => {
+            img.decode().catch(() => {});
+            resolve();
+          };
+          img.onerror = resolve;
           img.src = thumbSrc(project);
-          img.decode().then(resolve, resolve);
         })
     );
     pending.set(
