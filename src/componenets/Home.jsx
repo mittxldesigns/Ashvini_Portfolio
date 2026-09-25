@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import TransitionLink from "./TransitionLink.jsx";
-import { preloadThumbs } from "../data/projects.js";
+import { CONTRA_PROFILE, preloadThumbs } from "../data/projects.js";
 import {
   computeLayout,
   initialOrigin,
@@ -8,6 +8,7 @@ import {
 } from "../lib/gridLayout.js";
 
 const batla = "/avatar.webp";
+const headArt = "/home-art.avif";
 
 function Home() {
   // Warm the grid's first screen once this page has painted.
@@ -26,25 +27,28 @@ function Home() {
 
   return (
     <>
+      <img className="home-art" src={headArt} alt="" aria-hidden="true" />
       <div className="home-container">
         <div className="home-content">
           <div className="profile-pic">
-            <img src={batla} alt="Ashwani Kumar" />
+            <img src={batla} alt="Ashvini Kumar" />
           </div>
 
-          <h3>Ashwani Kumar</h3>
+          <h1>Ashvini Kumar</h1>
           <p>Artist & 3D Designer</p>
 
           <TransitionLink className="cta" to="/portfolio">
-            Enter Portfolio
+            Explore the work
           </TransitionLink>
+          <a className="home-contact" href={CONTRA_PROFILE} target="_blank" rel="noreferrer">
+            Start a project <span aria-hidden="true">↗</span>
+          </a>
         </div>
       </div>
 
       <p className="para position-1">
-        I'm a 3D artist focused on crafting intuitive, high-performance 3D
-        experiences for Web3D and rendering. With expertise in modeling,
-        texturing, and animation.
+        I make interactive 3D scenes and product visuals for the web, from
+        modeling through motion.
       </p>
     </>
   );

@@ -14,6 +14,7 @@ import {
   wrap,
 } from "../lib/gridLayout.js";
 import { gridState } from "../lib/gridState.js";
+import { PERSON_NAME } from "../data/seo.js";
 import { tagSharedElement, withViewTransition } from "../lib/viewTransition.js";
 
 const EASE = 0.2; // fraction of remaining distance covered per 60fps frame
@@ -92,19 +93,33 @@ export default function InfiniteDragGrid() {
     const { step, tile, block, vw, vh } = layout;
     const ox = wrap(origin.x, block);
     const oy = wrap(origin.y, block);
-    const out = [];
+    const entries = [];
+    const closest = new Map();
     forEachTile(layout, ({ key, item, x, y }) => {
       const dist = Math.hypot(
         ox + x + tile / 2 - vw / 2,
         oy + y + tile / 2 - vh / 2
       );
+      entries.push({ key, item, x, y, dist });
+      const current = closest.get(item.id);
+      if (!current || dist < current.dist) closest.set(item.id, { key, dist });
+    });
+    return entries.map(({ key, item, x, y, dist }) => {
+      const primary = closest.get(item.id)?.key === key;
+      const Tile = primary ? "a" : "div";
       const delay = Math.min((dist / step) * 60, 600);
       const isIn = loaded.has(item.id);
-      out.push(
-        <div
+      return (
+        <Tile
           key={key}
           className={isIn ? (intro ? "tile is-in" : "tile is-in is-static") : "tile"}
           data-id={item.id}
+          href={primary ? `/portfolio/${item.id}` : undefined}
+          aria-label={primary ? item.title : undefined}
+          aria-hidden={primary ? undefined : true}
+          onClick={(event) => {
+            if (primary && event.detail > 0) event.preventDefault();
+          }}
           style={{ left: x, top: y, width: tile, height: tile, "--d": `${delay}ms` }}
         >
           {isIn && (
@@ -117,10 +132,9 @@ export default function InfiniteDragGrid() {
             />
           )}
           <span className="tile-title">{item.title}</span>
-        </div>
+        </Tile>
       );
     });
-    return out;
   }, [layout, origin, loaded, intro]);
 
   useEffect(() => {
@@ -161,6 +175,10 @@ export default function InfiniteDragGrid() {
     let raf = 0;
     let last = performance.now();
     const tick = (now) => {
+      if (document.hidden) {
+        raf = 0;
+        return;
+      }
       const dt = Math.min(now - last, 64) / 16.667;
       last = now;
 
@@ -181,10 +199,18 @@ export default function InfiniteDragGrid() {
       if (Math.abs(s.ty - s.y) < 0.05) s.y = s.ty;
 
       draw();
+      if (s.vx !== 0 || s.vy !== 0 || s.x !== s.tx || s.y !== s.ty) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        raf = 0;
+      }
+    };
+    const wake = () => {
+      if (raf || document.hidden) return;
+      last = performance.now();
       raf = requestAnimationFrame(tick);
     };
     draw();
-    raf = requestAnimationFrame(tick);
 
     const onPointerDown = (e) => {
       if (e.pointerType === "mouse" && e.button !== 0) return;
@@ -219,6 +245,7 @@ export default function InfiniteDragGrid() {
       const ivy = (dy / elapsed) * 16.667;
       s.vx = s.vx * 0.5 + ivx * 0.5;
       s.vy = s.vy * 0.5 + ivy * 0.5;
+      wake();
     };
 
     const onPointerUp = (e) => {
@@ -247,6 +274,7 @@ export default function InfiniteDragGrid() {
       }
       s.vx = Math.max(-MAX_VELOCITY, Math.min(MAX_VELOCITY, s.vx));
       s.vy = Math.max(-MAX_VELOCITY, Math.min(MAX_VELOCITY, s.vy));
+      wake();
     };
 
     const onWheel = (e) => {
@@ -258,6 +286,7 @@ export default function InfiniteDragGrid() {
       s.vy = 0;
       s.tx -= e.deltaX * unit;
       s.ty -= e.deltaY * unit;
+      wake();
     };
 
     const onKey = (e) => {
@@ -275,6 +304,16 @@ export default function InfiniteDragGrid() {
       s.vy = 0;
       s.tx += m[0];
       s.ty += m[1];
+      wake();
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      } else if (s.vx !== 0 || s.vy !== 0 || s.x !== s.tx || s.y !== s.ty) {
+        wake();
+      }
     };
 
     // Safari fires these for trackpad pinch; block page zoom.
@@ -286,6 +325,7 @@ export default function InfiniteDragGrid() {
     viewport.addEventListener("pointercancel", onPointerUp);
     window.addEventListener("wheel", onWheel, { passive: false });
     window.addEventListener("keydown", onKey);
+    document.addEventListener("visibilitychange", onVisibility);
     document.addEventListener("gesturestart", blockGesture);
     document.addEventListener("gesturechange", blockGesture);
 
@@ -298,6 +338,7 @@ export default function InfiniteDragGrid() {
       viewport.removeEventListener("pointercancel", onPointerUp);
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("keydown", onKey);
+      document.removeEventListener("visibilitychange", onVisibility);
       document.removeEventListener("gesturestart", blockGesture);
       document.removeEventListener("gesturechange", blockGesture);
     };
@@ -305,6 +346,7 @@ export default function InfiniteDragGrid() {
 
   return (
     <div ref={viewportRef} className="viewport">
+      <h1 className="sr-only">Selected 3D work by {PERSON_NAME}</h1>
       <div ref={gridRef} className="grid">
         {tiles}
       </div>

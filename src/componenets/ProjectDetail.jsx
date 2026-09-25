@@ -4,8 +4,10 @@ import HeaderNav from "./HeaderNav.jsx";
 import ProjectStrip from "./ProjectStrip.jsx";
 import LiveScene from "./LiveScene.jsx";
 import TransitionLink from "./TransitionLink.jsx";
+import dnaHelixFull from "../assets/work/dna-helix-full.png";
 import {
   projects,
+  CONTRA_PROFILE,
   getProjectById,
   decodeThumb,
   preloadHero,
@@ -121,6 +123,7 @@ export default function ProjectDetail() {
   }
 
   const isCaseStudy = project.roles.length > 0;
+  const isDna = project.slug === "dna-helix";
   const meta = [
     ["Role", project.roles.join(", ")],
     ["Tools", project.tools.join(", ")],
@@ -151,9 +154,11 @@ export default function ProjectDetail() {
           <h1 className="project-title reveal" style={{ "--d": "90ms" }}>
             {project.title}
           </h1>
-          <p className="project-desc reveal" style={{ "--d": "140ms" }}>
-            {project.description}
-          </p>
+          {project.description && (
+            <p className="project-desc reveal" style={{ "--d": "140ms" }}>
+              {project.description}
+            </p>
+          )}
 
           {meta.length > 0 && (
             <dl className="project-meta reveal" style={{ "--d": "190ms" }}>
@@ -166,37 +171,37 @@ export default function ProjectDetail() {
             </dl>
           )}
 
-          <div className="project-actions reveal" style={{ "--d": "240ms" }}>
-            {project.externalLink && (
-              <a
-                className="cta"
-                href={project.externalLink}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {linkLabel(project.externalLink)}
-              </a>
-            )}
-            {project.extraLinks.map((l) => (
-              <a
-                key={l.url}
-                className="cta cta-outline"
-                href={l.url}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {l.label}
-              </a>
-            ))}
+          <div className="project-inquiry reveal" style={{ "--d": "240ms" }}>
+            <p>Need 3D for your next project?</p>
             <a
-              className={isCaseStudy ? "cta cta-outline" : "cta"}
-              href={project.contraUrl}
+              href={CONTRA_PROFILE}
               target="_blank"
               rel="noreferrer"
+              aria-label="Message Ashvini about a project on Contra"
             >
-              {isCaseStudy ? "Case Study on Contra" : "More work on Contra"}
+              Message Ashvini <span aria-hidden="true">↗</span>
             </a>
           </div>
+
+          {(project.externalLink || project.extraLinks.length > 0 || isCaseStudy) && (
+            <div className="project-links reveal" style={{ "--d": "260ms" }}>
+              {project.externalLink && (
+                <a href={project.externalLink} target="_blank" rel="noreferrer">
+                  {linkLabel(project.externalLink)} <span aria-hidden="true">↗</span>
+                </a>
+              )}
+              {project.extraLinks.map((link) => (
+                <a key={link.url} href={link.url} target="_blank" rel="noreferrer">
+                  {link.label} <span aria-hidden="true">↗</span>
+                </a>
+              ))}
+              {isCaseStudy && (
+                <a href={project.contraUrl} target="_blank" rel="noreferrer">
+                  See this work on Contra <span aria-hidden="true">↗</span>
+                </a>
+              )}
+            </div>
+          )}
 
           <div className="project-pager reveal" style={{ "--d": "290ms" }}>
             <button type="button" onClick={() => select(prev.id)}>
@@ -221,30 +226,37 @@ export default function ProjectDetail() {
             style={{ viewTransitionName: "hero" }}
           >
             <div className="project-hero-motion">
-              <picture key={`thumb-${project.id}`}>
-                <source srcSet={project.thumbAvif} type="image/avif" />
+              {isDna ? (
                 <img
-                  className="project-hero-thumb"
-                  src={project.thumbWebp}
-                  alt=""
-                  draggable={false}
-                />
-              </picture>
-              <picture key={project.id}>
-                <source srcSet={project.heroAvif} type="image/avif" />
-                <img
-                  className={
-                    heroLoadedId === project.id
-                      ? "project-hero-full is-loaded"
-                      : "project-hero-full"
-                  }
-                  src={project.heroWebp}
+                  className="project-hero-full project-hero-full--dna is-loaded"
+                  src={dnaHelixFull}
                   alt={project.title}
                   draggable={false}
-                  decoding="async"
-                  onLoad={() => setHeroLoadedId(project.id)}
                 />
-              </picture>
+              ) : (
+                <>
+                  <picture key={`thumb-${project.id}`}>
+                    <source srcSet={project.thumbAvif} type="image/avif" />
+                    <img
+                      className="project-hero-thumb"
+                      src={project.thumbWebp}
+                      alt=""
+                      draggable={false}
+                    />
+                  </picture>
+                  <picture key={project.id}>
+                    <source srcSet={project.heroAvif} type="image/avif" />
+                    <img
+                      className={heroLoadedId === project.id ? "project-hero-full is-loaded" : "project-hero-full"}
+                      src={project.heroWebp}
+                      alt={project.title}
+                      draggable={false}
+                      decoding="async"
+                      onLoad={() => setHeroLoadedId(project.id)}
+                    />
+                  </picture>
+                </>
+              )}
             </div>
             <LiveScene
               key={project.id}

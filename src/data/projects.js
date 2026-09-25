@@ -1,3 +1,6 @@
+import { CONTRA_PROFILE, pieces } from "./projectContent.js";
+export { CONTRA_PROFILE } from "./projectContent.js";
+
 const images = import.meta.glob("../assets/work/*.{avif,webp}", {
   eager: true,
   import: "default",
@@ -5,135 +8,7 @@ const images = import.meta.glob("../assets/work/*.{avif,webp}", {
 
 const asset = (name) => images[`../assets/work/${name}`];
 
-const CONTRA_PROFILE = "https://contra.com/ashvini_kmr?r=mittxldesigns";
-
-// Grid pieces. Only renders verified against their Contra case-study cover
-// carry case-study metadata; the rest are standalone renders.
-const pieces = [
-  {
-    slug: "nothing-headphones",
-    title: "Spline3D Meets Nothing Headphones 1",
-    description:
-      "Modeled Nothing Headphones 1 entirely in Spline3D with native tools — complex hard-surface forms, clean geometry, and a web-ready model under 1MB.",
-    roles: ["3D Modeler", "Product Designer", "Spline Designer"],
-    tools: ["Spline"],
-    outcome: "3D Model",
-    externalLink:
-      "https://my.spline.design/nothingheadphonescopycopycopy-qkUBtxMtp3bkVcodGcTFLSpA/",
-    contraUrl:
-      "https://contra.com/p/csecLZQL-spline3-d-meets-nothing-headphones-1",
-  },
-  {
-    slug: "teenage-engineering-tp7",
-    title: "When Spline meets Teenage Engineering",
-    description:
-      "Recreated the Teenage Engineering TP-7 in Spline3D using primitives and booleans, as a fully interactive, web-ready 3D model.",
-    roles: ["Spline Designer"],
-    tools: ["Spline"],
-    outcome: "3D Model",
-    externalLink: "https://my.spline.design/tp7copy-0schcvltKXayJ29fZiVLZ29Y/",
-    contraUrl:
-      "https://contra.com/p/UcWcPUBA-when-spline-meets-teenage-engineering",
-  },
-  {
-    slug: "mebrafino",
-    title: "Scroll-Interactive 3D Visual Experience for Mebrafino",
-    description:
-      "A scroll-interactive 3D experience for Mebrafino's brand identity, blending motion, depth, and smooth performance for an immersive web presence.",
-    roles: ["3D Designer"],
-    tools: ["Spline", "Webflow"],
-    outcome: "3D Visualization",
-    externalLink:
-      "https://my.spline.design/mebrafinostagingmobilefinaldraftcopycopy-8wkhTuCAEmrT1Q3hE4wp1aYU/",
-    contraUrl:
-      "https://contra.com/p/cecBRmPL-scroll-interactive-3-d-visual-experience-for-mebrafino",
-  },
-  { slug: "head-animation", title: "Head Animation" },
-  {
-    slug: "cmf-headphones-pro",
-    title: "CMF Headphones Pro by Nothing",
-    description:
-      "Modeled, textured, and optimized natively in Spline3D — kept minimal, efficient, and performance-friendly from the ground up.",
-    roles: ["3D Modeler", "Spline Designer"],
-    tools: ["Spline"],
-    outcome: "3D Model",
-    externalLink:
-      "https://my.spline.design/cmfheadphonesprocopy-aL3jLLcEVTAHfQWd8aGPQ9GF/",
-    extraLinks: [
-      {
-        label: "White Version",
-        url: "https://my.spline.design/cmfheadphonesprowhiteversion-RMtAV5bZDZguG4QJJqAfB8IG/",
-      },
-    ],
-    contraUrl:
-      "https://contra.com/community/6YUMLm37-from-modeling-to-texturing-and-optimization",
-  },
-  {
-    slug: "helix-animation",
-    title: "Helix Loop",
-    description:
-      "An abstract helix loop animated in Spline, featured in Ashwani's Best Spline Projects of 2024–2025 compilation.",
-    roles: ["Spline Designer"],
-    tools: ["Spline"],
-    outcome: "Motion Design",
-    externalLink:
-      "https://my.spline.design/untitled-9ac6a4913f719d426e02f6c6b625c488/",
-    contraUrl: "https://contra.com/p/k3OMMAmq-best-spline-projects-of-2024-2025",
-  },
-  {
-    slug: "worklouder-keypad",
-    title: "Enhancing Worklouder's Keyboard Concept with Spline3D",
-    description:
-      "Reimagined Worklouder's keypad concept in Spline3D, with subtle design improvements aimed at designers.",
-    roles: ["3D Designer", "3D Modeler", "Spline Designer"],
-    tools: ["Framer", "Spline"],
-    outcome: "3D Model",
-    externalLink:
-      "https://my.spline.design/untitled-6218382d11270e331e9b99c101d97504/",
-    contraUrl:
-      "https://contra.com/p/XlvoQMAE-enhancing-worklouders-keyboard-concept-with-spline3-d",
-  },
-  { slug: "patek-philippe", title: "Patek Philippe" },
-  {
-    slug: "heygen-glass",
-    title: "Web Background Assets for HeyGen Using Spline3D",
-    description:
-      "Dynamic Spline3D backgrounds for HeyGen built from glass, gradients, refractions, and 3D elements.",
-    roles: ["Spline Designer"],
-    tools: ["Spline"],
-    outcome: "3D Animation",
-    externalLink: "https://www.heygen.com",
-    contraUrl:
-      "https://contra.com/p/UFsARA6m-web-background-assets-for-hey-gen-using-spline3-d",
-  },
-  {
-    slug: "labyrinth-orb",
-    title: "Animated Abstract Gears",
-    description:
-      "An animated Spline scene Ashwani published to the Spline Community, open for anyone to remix.",
-    tools: ["Spline"],
-    externalLink:
-      "https://community.spline.design/file/062d90f3-a48d-421d-9aff-740ab57908b3",
-  },
-  { slug: "eneftro-card", title: "Eneftro Membership Card" },
-  { slug: "dna-helix", title: "DNA Helix" },
-  {
-    slug: "petal-spiral",
-    title: "Pulse Shift",
-    description:
-      "An animated Spline scene Ashwani published to the Spline Community, open for anyone to remix.",
-    tools: ["Spline"],
-    externalLink:
-      "https://community.spline.design/file/38f079c9-0878-413d-932f-678b5f886a8f",
-  },
-  { slug: "split-prism", title: "Split Prism" },
-  { slug: "chrome-ak47", title: "Chrome AK-47" },
-];
-
 // Spline code exports (Export → Code Export), loaded live on project pages.
-// Off until the exports can drop the "Built with Spline" badge (paid Spline
-// plan) and each scene is framed as an isolated object.
-const LIVE_SCENES = false;
 const scene = (id) => `https://prod.spline.design/${id}/scene.splinecode`;
 const splineScenes = {
   "nothing-headphones": scene("jXEeiYImnNo-xkP9"),
@@ -151,9 +26,8 @@ const splineScenes = {
   "dna-helix": scene("3vQwrcy4RfqSLaaZ"),
 };
 
-export const projects = pieces.map((p, i) => ({
-  id: i + 1,
-  description: "A 3D render from Ashwani's portfolio.",
+export const projects = pieces.map((p) => ({
+  description: null,
   roles: [],
   tools: [],
   outcome: null,
@@ -165,7 +39,7 @@ export const projects = pieces.map((p, i) => ({
   thumbWebp: asset(`${p.slug}-thumb.webp`),
   heroAvif: asset(`${p.slug}-hero.avif`),
   heroWebp: asset(`${p.slug}-hero.webp`),
-  splineScene: LIVE_SCENES ? splineScenes[p.slug] ?? null : null,
+  splineScene: splineScenes[p.slug] ?? null,
 }));
 
 // Contra work without a matching render in the grid.

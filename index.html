@@ -4,14 +4,26 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/avif" href="/favicon.avif" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="Ashwani Kumar — Top 1% Spline Expert. 3D artist crafting interactive, high-performance 3D experiences for the web."
-    />
-    <title>Ashwani Kumar — 3D Artist & Spline Designer</title>
+    <!-- SEO_HEAD_START -->
+    <title>Ashvini Kumar — 3D Artist & Spline Designer</title>
+    <meta name="description" content="Interactive 3D scenes, product models, and motion for the web by Ashvini Kumar." />
+    <link rel="canonical" href="https://bettercallashvini.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Ashvini Kumar" />
+    <meta property="og:title" content="Ashvini Kumar — 3D Artist & Spline Designer" />
+    <meta property="og:description" content="Interactive 3D scenes, product models, and motion for the web by Ashvini Kumar." />
+    <meta property="og:url" content="https://bettercallashvini.com/" />
+    <meta property="og:image" content="https://bettercallashvini.com/social-preview.webp" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Ashvini Kumar — 3D Artist & Spline Designer" />
+    <meta name="twitter:description" content="Interactive 3D scenes, product models, and motion for the web by Ashvini Kumar." />
+    <meta name="twitter:image" content="https://bettercallashvini.com/social-preview.webp" />
+    <!-- SEO_HEAD_END -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preload" as="image" href="/avatar.webp" fetchpriority="high" />
+    <!-- HOME_PRELOAD_START -->
+    <link rel="preload" as="image" href="/home-art.avif" fetchpriority="high" />
+    <!-- HOME_PRELOAD_END -->
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Comforter+Brush&family=Inter:opsz,wght@14..32,300..700&display=swap"
@@ -33,7 +45,7 @@
     </script>
   </head>
   <body>
-    <div id="root"><!-- Static copy of Home so the first screen paints before the JS arrives; React replaces it on mount. Keep in sync with src/componenets/Home.jsx. --><div class="boot-shell" style="position: relative; width: 100%; min-height: 100vh"><div class="home-container"><div class="home-content"><div class="profile-pic"><img src="/avatar.webp" alt="Ashwani Kumar" /></div><h3>Ashwani Kumar</h3><p>Artist &amp; 3D Designer</p><a class="cta" href="/portfolio">Enter Portfolio</a></div></div><p class="para position-1">I'm a 3D artist focused on crafting intuitive, high-performance 3D experiences for Web3D and rendering. With expertise in modeling, texturing, and animation.</p></div></div>
+    <div id="root"><!-- BOOT_SHELL_START --><div class="boot-shell" style="position: relative; width: 100%; min-height: 100vh"><img class="home-art" src="/home-art.avif" alt="" aria-hidden="true" /><div class="home-container"><div class="home-content"><h1>Ashvini Kumar</h1><p>Artist &amp; 3D Designer</p><a class="cta" href="/portfolio">Explore the work</a><a class="home-contact" href="https://contra.com/ashvini_kmr?r=mittxldesigns">Start a project <span aria-hidden="true">↗</span></a></div></div><p class="para position-1">I make interactive 3D scenes and product visuals for the web, from modeling through motion.</p></div><!-- BOOT_SHELL_END --></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

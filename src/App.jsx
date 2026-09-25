@@ -6,6 +6,7 @@ import Home from "./componenets/Home.jsx";
 import HeaderNav from "./componenets/HeaderNav.jsx";
 import About from "./componenets/About.jsx";
 import ProjectDetail from "./componenets/ProjectDetail.jsx";
+import SeoHead from "./componenets/SeoHead.jsx";
 import { notifyRouteCommit } from "./lib/viewTransition.js";
 
 // Fires once the DOM for a new location has committed; view transitions
@@ -24,6 +25,7 @@ function RouteCommitSignal() {
 function App() {
   return (
     <BrowserRouter>
+      <SeoHead />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route
