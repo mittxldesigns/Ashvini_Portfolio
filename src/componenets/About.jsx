@@ -46,7 +46,7 @@ function About() {
         </div>
 
         <div className="case-studies">
-          <h2>More case studies</h2>
+          <h2>More work</h2>
           {caseStudies.map((c) => (
             <a key={c.url} href={c.url} target="_blank" rel="noreferrer">
               <span>{c.title}</span>
@@ -71,6 +71,14 @@ function About() {
             rel="noreferrer"
           >
             Instagram
+          </a>
+          <a
+            className="cta cta-outline"
+            href="https://community.spline.design/bettercallashvini"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Spline Community
           </a>
         </div>
       </div>

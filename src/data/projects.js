@@ -37,7 +37,7 @@ const pieces = [
   },
   {
     slug: "mebrafino",
-    title: "Scroll-Interactive 3D Experience for Mebrafino",
+    title: "Scroll-Interactive 3D Visual Experience for Mebrafino",
     description:
       "A scroll-interactive 3D experience for Mebrafino's brand identity, blending motion, depth, and smooth performance for an immersive web presence.",
     roles: ["3D Designer"],
@@ -58,26 +58,45 @@ const pieces = [
     tools: ["Spline"],
     outcome: "3D Model",
     externalLink:
-      "https://my.spline.design/cmfheadphonesprowhiteversion-RMtAV5bZDZguG4QJJqAfB8IG/",
+      "https://my.spline.design/cmfheadphonesprocopy-aL3jLLcEVTAHfQWd8aGPQ9GF/",
+    extraLinks: [
+      {
+        label: "White Version",
+        url: "https://my.spline.design/cmfheadphonesprowhiteversion-RMtAV5bZDZguG4QJJqAfB8IG/",
+      },
+    ],
     contraUrl:
       "https://contra.com/community/6YUMLm37-from-modeling-to-texturing-and-optimization",
   },
-  { slug: "helix-animation", title: "Helix Animation" },
+  {
+    slug: "helix-animation",
+    title: "Helix Loop",
+    description:
+      "An abstract helix loop animated in Spline, featured in Ashwani's Best Spline Projects of 2024–2025 compilation.",
+    roles: ["Spline Designer"],
+    tools: ["Spline"],
+    outcome: "Motion Design",
+    externalLink:
+      "https://my.spline.design/untitled-9ac6a4913f719d426e02f6c6b625c488/",
+    contraUrl: "https://contra.com/p/k3OMMAmq-best-spline-projects-of-2024-2025",
+  },
   {
     slug: "worklouder-keypad",
-    title: "Enhancing Worklouder's Keyboard Concept",
+    title: "Enhancing Worklouder's Keyboard Concept with Spline3D",
     description:
       "Reimagined Worklouder's keypad concept in Spline3D, with subtle design improvements aimed at designers.",
     roles: ["3D Designer", "3D Modeler", "Spline Designer"],
     tools: ["Framer", "Spline"],
     outcome: "3D Model",
+    externalLink:
+      "https://my.spline.design/untitled-6218382d11270e331e9b99c101d97504/",
     contraUrl:
       "https://contra.com/p/XlvoQMAE-enhancing-worklouders-keyboard-concept-with-spline3-d",
   },
   { slug: "patek-philippe", title: "Patek Philippe" },
   {
     slug: "heygen-glass",
-    title: "Web Background Assets for HeyGen",
+    title: "Web Background Assets for HeyGen Using Spline3D",
     description:
       "Dynamic Spline3D backgrounds for HeyGen built from glass, gradients, refractions, and 3D elements.",
     roles: ["Spline Designer"],
@@ -87,10 +106,26 @@ const pieces = [
     contraUrl:
       "https://contra.com/p/UFsARA6m-web-background-assets-for-hey-gen-using-spline3-d",
   },
-  { slug: "labyrinth-orb", title: "Labyrinth Orb" },
+  {
+    slug: "labyrinth-orb",
+    title: "Animated Abstract Gears",
+    description:
+      "An animated Spline scene Ashwani published to the Spline Community, open for anyone to remix.",
+    tools: ["Spline"],
+    externalLink:
+      "https://community.spline.design/file/062d90f3-a48d-421d-9aff-740ab57908b3",
+  },
   { slug: "eneftro-card", title: "Eneftro Membership Card" },
   { slug: "dna-helix", title: "DNA Helix" },
-  { slug: "petal-spiral", title: "Petal Spiral" },
+  {
+    slug: "petal-spiral",
+    title: "Pulse Shift",
+    description:
+      "An animated Spline scene Ashwani published to the Spline Community, open for anyone to remix.",
+    tools: ["Spline"],
+    externalLink:
+      "https://community.spline.design/file/38f079c9-0878-413d-932f-678b5f886a8f",
+  },
   { slug: "split-prism", title: "Split Prism" },
   { slug: "chrome-ak47", title: "Chrome AK-47" },
 ];
@@ -102,6 +137,7 @@ export const projects = pieces.map((p, i) => ({
   tools: [],
   outcome: null,
   externalLink: null,
+  extraLinks: [],
   contraUrl: CONTRA_PROFILE,
   ...p,
   thumbAvif: asset(`${p.slug}-thumb.avif`),
@@ -110,8 +146,12 @@ export const projects = pieces.map((p, i) => ({
   heroWebp: asset(`${p.slug}-hero.webp`),
 }));
 
-// Contra case studies without a matching render in the grid.
+// Contra work without a matching render in the grid.
 export const caseStudies = [
+  {
+    title: "T.M-4 — Teenage Engineering Concept in Spline",
+    url: "https://contra.com/community/EuN2LzOQ-back-with-another-spline-project-from",
+  },
   {
     title: "Best Spline Projects of 2024–2025",
     url: "https://contra.com/p/k3OMMAmq-best-spline-projects-of-2024-2025",

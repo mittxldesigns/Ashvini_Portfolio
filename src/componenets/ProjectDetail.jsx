@@ -17,6 +17,13 @@ import {
 
 const pad = (n) => String(n).padStart(2, "0");
 
+const linkLabel = (url) =>
+  url.includes("community.spline.design")
+    ? "Open in Spline Community"
+    : url.includes("spline.design")
+      ? "View Spline Scene"
+      : "Visit Site";
+
 export default function ProjectDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -160,11 +167,20 @@ export default function ProjectDetail() {
                 target="_blank"
                 rel="noreferrer"
               >
-                {project.externalLink.includes("spline.design")
-                  ? "View Spline Scene"
-                  : "Visit Site"}
+                {linkLabel(project.externalLink)}
               </a>
             )}
+            {project.extraLinks.map((l) => (
+              <a
+                key={l.url}
+                className="cta cta-outline"
+                href={l.url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {l.label}
+              </a>
+            ))}
             <a
               className={isCaseStudy ? "cta cta-outline" : "cta"}
               href={project.contraUrl}
