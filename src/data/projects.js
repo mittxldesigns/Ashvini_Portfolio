@@ -130,6 +130,27 @@ const pieces = [
   { slug: "chrome-ak47", title: "Chrome AK-47" },
 ];
 
+// Spline code exports (Export → Code Export), loaded live on project pages.
+// Off until the exports can drop the "Built with Spline" badge (paid Spline
+// plan) and each scene is framed as an isolated object.
+const LIVE_SCENES = false;
+const scene = (id) => `https://prod.spline.design/${id}/scene.splinecode`;
+const splineScenes = {
+  "nothing-headphones": scene("jXEeiYImnNo-xkP9"),
+  "teenage-engineering-tp7": scene("OTRUzpGWHaubpEPX"),
+  "mebrafino": scene("kdqhqPUq6EiMChKd"),
+  "head-animation": scene("yEU3-rshpVEnZpOO"),
+  "cmf-headphones-pro": scene("AudUg-Rg6HK6vyGz"),
+  "helix-animation": scene("jopYXnsC3tdHKmh7"),
+  "worklouder-keypad": scene("JpuhRvZr5uM0NUsL"),
+  "patek-philippe": scene("hY3qIr45CrkA3skJ"),
+  "labyrinth-orb": scene("h0Vxy9FByCAJOujC"),
+  "petal-spiral": scene("BrvRczWQQJRmAnHS"),
+  "chrome-ak47": scene("ETZoGHGU-gWBxlR8"),
+  "eneftro-card": scene("QwfwSb7Mgrojmw3X"),
+  "dna-helix": scene("3vQwrcy4RfqSLaaZ"),
+};
+
 export const projects = pieces.map((p, i) => ({
   id: i + 1,
   description: "A 3D render from Ashwani's portfolio.",
@@ -138,13 +159,13 @@ export const projects = pieces.map((p, i) => ({
   outcome: null,
   externalLink: null,
   extraLinks: [],
-  splineScene: null, // prod.spline.design/.../scene.splinecode (code export)
   contraUrl: CONTRA_PROFILE,
   ...p,
   thumbAvif: asset(`${p.slug}-thumb.avif`),
   thumbWebp: asset(`${p.slug}-thumb.webp`),
   heroAvif: asset(`${p.slug}-hero.avif`),
   heroWebp: asset(`${p.slug}-hero.webp`),
+  splineScene: LIVE_SCENES ? splineScenes[p.slug] ?? null : null,
 }));
 
 // Contra work without a matching render in the grid.
