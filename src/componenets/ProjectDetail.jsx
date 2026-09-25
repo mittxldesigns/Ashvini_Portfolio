@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import HeaderNav from "./HeaderNav.jsx";
 import ProjectStrip from "./ProjectStrip.jsx";
+import LiveScene from "./LiveScene.jsx";
 import TransitionLink from "./TransitionLink.jsx";
 import {
   projects,
@@ -29,6 +30,12 @@ export default function ProjectDetail() {
   const navigate = useNavigate();
   const project = getProjectById(id);
   const [heroLoadedId, setHeroLoadedId] = useState(null);
+  const [liveId, setLiveId] = useState(null);
+  const projectId = project?.id;
+  const onLive = useCallback(
+    (live) => setLiveId(live ? projectId : null),
+    [projectId]
+  );
   // Arriving via the shared-element transition: the hero is already flying
   // into place, so skip its own entrance animation.
   const [arrivedByMorph] = useState(isViewTransitionRunning);
@@ -204,7 +211,13 @@ export default function ProjectDetail() {
         <div className="project-stage" ref={stageRef}>
           <div className="project-glow" />
           <div
-            className={arrivedByMorph ? "project-hero" : "project-hero is-intro"}
+            className={[
+              "project-hero",
+              !arrivedByMorph && "is-intro",
+              liveId === project.id && "is-live",
+            ]
+              .filter(Boolean)
+              .join(" ")}
             style={{ viewTransitionName: "hero" }}
           >
             <div className="project-hero-motion">
@@ -233,6 +246,11 @@ export default function ProjectDetail() {
                 />
               </picture>
             </div>
+            <LiveScene
+              key={project.id}
+              url={project.splineScene}
+              onLive={onLive}
+            />
           </div>
         </div>
       </div>

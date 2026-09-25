@@ -138,6 +138,7 @@ export const projects = pieces.map((p, i) => ({
   outcome: null,
   externalLink: null,
   extraLinks: [],
+  splineScene: null, // prod.spline.design/.../scene.splinecode (code export)
   contraUrl: CONTRA_PROFILE,
   ...p,
   thumbAvif: asset(`${p.slug}-thumb.avif`),

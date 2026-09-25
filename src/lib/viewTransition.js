@@ -1,6 +1,12 @@
 import { flushSync } from "react-dom";
 
 let running = false;
+let settled = Promise.resolve();
+
+// Resolves once the current view transition (if any) has fully finished.
+export function transitionsSettled() {
+  return settled;
+}
 
 // True while a view transition is capturing/animating; pages use it to skip
 // their own entrance animation on elements the transition already moves.
@@ -67,6 +73,7 @@ export async function withViewTransition(kind, update, before) {
     flushSync(update);
     return committed;
   });
+  settled = t.finished.catch(() => {});
   t.finished.finally(() => {
     running = false;
     if (root.dataset.vt === kind) delete root.dataset.vt;
