@@ -141,11 +141,18 @@ function loadThumb(project) {
   return pending.get(project.id);
 }
 
+export function preloadThumb(project) {
+  return loadThumb(project);
+}
+
+export function preloadThumbIds(ids) {
+  return Promise.all(ids.map(getProjectById).filter(Boolean).map(loadThumb));
+}
+
 // Loads the given ids first (in parallel), then everything else.
 export function preloadThumbs(priorityIds = []) {
-  const first = priorityIds.map(getProjectById).filter(Boolean);
   const rest = projects.filter((p) => !priorityIds.includes(p.id));
-  return Promise.all(first.map(loadThumb)).then(() =>
+  return preloadThumbIds(priorityIds).then(() =>
     Promise.all(rest.map(loadThumb))
   );
 }

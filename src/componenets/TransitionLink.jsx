@@ -3,7 +3,7 @@ import { withViewTransition } from "../lib/viewTransition.js";
 
 // <a> that navigates inside a View Transition; modified clicks (new tab,
 // etc.) fall through to the browser.
-export default function TransitionLink({ to, kind = "page", onBeforeNavigate, ...rest }) {
+export default function TransitionLink({ to, kind = "page", onBeforeNavigate, beforeNavigate, ...rest }) {
   const navigate = useNavigate();
 
   const onClick = (e) => {
@@ -11,7 +11,7 @@ export default function TransitionLink({ to, kind = "page", onBeforeNavigate, ..
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
     onBeforeNavigate?.();
-    withViewTransition(kind, () => navigate(to));
+    withViewTransition(kind, () => navigate(to), beforeNavigate);
   };
 
   return <a href={to} onClick={onClick} {...rest} />;

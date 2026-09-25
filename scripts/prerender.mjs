@@ -101,12 +101,6 @@ async function writePage(path, destination, shell) {
     ? `${SITE_URL}${builtImage(page.project.slug)}`
     : `${SITE_URL}/social-preview.webp`;
   let html = replaceSection(template, "<!-- SEO_HEAD_START -->", "<!-- SEO_HEAD_END -->", headFor(page, image));
-  html = replaceSection(
-    html,
-    "<!-- HOME_PRELOAD_START -->",
-    "<!-- HOME_PRELOAD_END -->",
-    page.kind === "home" ? '<link rel="preload" as="image" href="/home-art.avif" fetchpriority="high" />' : "",
-  );
   html = replaceSection(html, homeShellStart, homeShellEnd, shell);
   await mkdir(dirname(join(output, destination)), { recursive: true });
   await writeFile(join(output, destination), html);

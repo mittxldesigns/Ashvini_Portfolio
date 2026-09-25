@@ -24,6 +24,28 @@ export function initialOrigin(layout) {
   };
 }
 
+// Place a chosen project tile beneath a screen-space point.
+export function originForProject(layout, projectId, center) {
+  const { size, step, tile } = layout;
+  let chosen = null;
+  let distance = Infinity;
+  for (let row = 0; row < size; row += 1) {
+    for (let col = 0; col < size; col += 1) {
+      if (itemAt(row, col, size).id !== projectId) continue;
+      const fromMiddle = Math.hypot(row - size / 2, col - size / 2);
+      if (fromMiddle < distance) {
+        distance = fromMiddle;
+        chosen = { row, col };
+      }
+    }
+  }
+  if (!chosen) return initialOrigin(layout);
+  return {
+    x: center.x - chosen.col * step - tile / 2,
+    y: center.y - chosen.row * step - tile / 2,
+  };
+}
+
 export const wrap = (v, block) => ((v % block) + block) % block;
 
 export const itemAt = (row, col, size) =>
