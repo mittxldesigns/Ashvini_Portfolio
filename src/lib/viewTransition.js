@@ -19,6 +19,24 @@ export function tagSharedElement(el, name) {
   el.dataset.vtTemp = "";
 }
 
+// React Router applies navigations inside React.startTransition, which
+// flushSync can't force through, so the DOM may not have changed when the
+// update callback returns. The callback instead waits for <RouteCommitSignal>
+// to report that the new location has committed.
+let resolveCommit = null;
+
+export function notifyRouteCommit() {
+  resolveCommit?.();
+  resolveCommit = null;
+}
+
+function nextRouteCommit(timeoutMs) {
+  return new Promise((resolve) => {
+    resolveCommit = resolve;
+    setTimeout(resolve, timeoutMs);
+  });
+}
+
 function clearTempNames() {
   document.querySelectorAll("[data-vt-temp]").forEach((el) => {
     el.style.viewTransitionName = "";
@@ -44,7 +62,11 @@ export async function withViewTransition(kind, update, before) {
   const root = document.documentElement;
   root.dataset.vt = kind;
   running = true;
-  const t = document.startViewTransition(() => flushSync(update));
+  const t = document.startViewTransition(() => {
+    const committed = nextRouteCommit(1000);
+    flushSync(update);
+    return committed;
+  });
   t.finished.finally(() => {
     running = false;
     if (root.dataset.vt === kind) delete root.dataset.vt;
