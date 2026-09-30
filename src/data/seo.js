@@ -44,6 +44,16 @@ export function getSeoForPath(pathname) {
     };
   }
 
+  if (path === "/editorial") {
+    return {
+      ...base,
+      kind: "editorial",
+      title: `Social & Editorial Design — ${PERSON_NAME}`,
+      description:
+        "Social posts, covers and thumbnails Ashvini Kumar designed for pop-culture publishers FandomWire and Animated Times.",
+    };
+  }
+
   const projectMatch = /^\/portfolio\/([1-9]\d*)$/.exec(path);
   const project = projectMatch && pieces.find((piece) => piece.id === Number(projectMatch[1]));
   if (project) {
@@ -114,6 +124,21 @@ export function getStructuredData(page, image = page.image) {
               url: `${SITE_URL}/portfolio/${piece.id}`,
             })),
           },
+        },
+      ],
+    };
+  }
+
+  if (page.kind === "editorial") {
+    return {
+      "@context": "https://schema.org",
+      "@graph": [
+        person,
+        {
+          "@type": "CollectionPage",
+          name: "Social & Editorial Design",
+          url: page.canonical,
+          creator: { "@id": person["@id"] },
         },
       ],
     };

@@ -5,6 +5,7 @@ import InfiniteDragGrid from "./componenets/InfiniteDragGrid.jsx";
 import Home from "./componenets/Home.jsx";
 import HeaderNav from "./componenets/HeaderNav.jsx";
 import About from "./componenets/About.jsx";
+import Editorial from "./componenets/Editorial.jsx";
 import ProjectDetail from "./componenets/ProjectDetail.jsx";
 import SeoHead from "./componenets/SeoHead.jsx";
 import { notifyRouteCommit } from "./lib/viewTransition.js";
@@ -39,6 +40,7 @@ function App() {
         />
         <Route path="/portfolio/:id" element={<ProjectDetail />} />
         <Route path="/about" element={<About />} />
+        <Route path="/editorial" element={<Editorial />} />
       </Routes>
       <RouteCommitSignal />
     </BrowserRouter>

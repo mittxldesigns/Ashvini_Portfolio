@@ -91,6 +91,10 @@ function aboutShell() {
   return `<main class="seo-shell"><a class="seo-home-link" href="/portfolio">← Selected work</a><h1>About ${escapeHtml(PERSON_NAME)}</h1><p>A 3D artist and Spline designer creating product visuals and interactive scenes for the web.</p><p>Explore selected work, or send a project inquiry through Contra.</p><a class="seo-contact" href="${escapeHtml(CONTRA_PROFILE)}">Message Ashvini about a project ↗</a></main>`;
 }
 
+function editorialShell() {
+  return `<main class="seo-shell"><a class="seo-home-link" href="/">${escapeHtml(PERSON_NAME)}</a><h1>Social &amp; editorial design</h1><p>Social posts, covers and thumbnails designed for pop-culture publishers FandomWire and Animated Times: news and theory covers, reviews and campaigns, timelines and retrospectives, and data graphics.</p><a class="seo-contact" href="/portfolio">See the 3D &amp; Web3D work →</a></main>`;
+}
+
 function notFoundShell() {
   return `<main class="seo-shell"><h1>Page not found</h1><p>That project page is not in this portfolio.</p><a class="seo-contact" href="/portfolio">Explore the work →</a></main>`;
 }
@@ -109,6 +113,7 @@ async function writePage(path, destination, shell) {
 await writePage("/", "index.html", homeShell);
 await writePage("/portfolio", "portfolio.html", portfolioShell());
 await writePage("/about", "about.html", aboutShell());
+await writePage("/editorial", "editorial.html", editorialShell());
 for (const [index, piece] of pieces.entries()) {
   const path = `/portfolio/${piece.id}`;
   const page = getSeoForPath(path);
@@ -116,7 +121,7 @@ for (const [index, piece] of pieces.entries()) {
 }
 await writePage("/404", "404.html", notFoundShell());
 
-const sitemapPaths = ["/", "/portfolio", "/about", ...pieces.map((piece) => `/portfolio/${piece.id}`)];
+const sitemapPaths = ["/", "/portfolio", "/about", "/editorial", ...pieces.map((piece) => `/portfolio/${piece.id}`)];
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapPaths.map((path) => `  <url><loc>${SITE_URL}${path}</loc></url>`).join("\n")}\n</urlset>\n`;
 await writeFile(join(output, "sitemap.xml"), sitemap);
 console.log(`Generated ${sitemapPaths.length} search-ready pages and sitemap.xml`);

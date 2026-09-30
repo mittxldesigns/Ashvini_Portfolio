@@ -117,6 +117,9 @@ function Home() {
           <a className="home-contact" href={CONTRA_PROFILE} target="_blank" rel="noreferrer">
             Start a project <span aria-hidden="true">↗</span>
           </a>
+          <TransitionLink className="home-contact" to="/editorial">
+            Social &amp; editorial design <span aria-hidden="true">→</span>
+          </TransitionLink>
         </div>
       </div>
 
