@@ -31,7 +31,7 @@ TODO next:
    - dark -> /sketches: paper sheet slides/lays in over the dark page (custom `::view-transition-new(root)` keyed by `html[data-vt=...]`),
    - /sketches -> dark: paper lifts/turns away,
    - dark <-> dark: keep Codex's existing transitions (`src/lib/viewTransition.js`, "View transitions" block in index.css). Set the `kind` via TransitionLink / HeaderNav links.
-3. Ask Tanish: keep "Bangles" study (credits @siimipie reference)? Copy review by Ashvini.
+3. DECIDED: keep the "Bangles" study (with the @siimipie reference credit). Ashvini may still review copy.
 4. Then add `/sketches` to llms.txt, link it from Home/About, deploy to production.
 
 ## Other assets
@@ -41,4 +41,4 @@ TODO next:
 ## LinkedIn auto-apply extension (running live)
 - `~/Downloads/linkedin-autoapply/` (v1.4.1), loaded unpacked in Chrome profile "Profile 8" (kumarak9335@gmail.com). Bumping `version.txt` makes it self-reload.
 - Pacing: 07:00-01:00 local, bursts of 10-15 then 5-6 min cooldown, soft cap ~50/day, alternates India-remote with abroad searches, priority pop-culture employers, blocks FandomWire/Animated Times, honest answers only. Claude Code native bridge for odd questions (`host/`). Tests: `node tests/rules.test.js`, jsdom sim in `tests/`.
-- Open question for Tanish: answer for "make this job your sole focus / drop other clients?" (currently skips those jobs).
+- DECIDED (v1.4.2): "make this job your sole focus / drop other clients?" is answered Yes (he'll commit if the offer is worth it).
