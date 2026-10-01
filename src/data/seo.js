@@ -80,6 +80,11 @@ export function getSeoForPath(pathname, content) {
       description: text(profile.sketchesIntro) || `${name}'s sketchbook: ${chapters.map((chapter) => chapter.label).filter(Boolean).join(", ")}.`,
     },
   };
+  if (path === "/admin" || path.startsWith("/admin/")) return {
+    ...base, kind: "admin", title: `Portfolio editor — ${name}`,
+    description: "Owner sign-in for editing and publishing the portfolio.",
+    robots: "noindex,nofollow,noarchive",
+  };
   const definition = definitions[path];
   if (definition) {
     const overrides = profile.seo?.[definition.kind];
@@ -119,7 +124,7 @@ export function getSeoForPath(pathname, content) {
 }
 
 export function getStructuredData(page, image = page.image, content) {
-  if (page.kind === "notFound" || (page.kind === "project" && page.sensitive)) return null;
+  if (["notFound", "admin"].includes(page.kind) || (page.kind === "project" && page.sensitive)) return null;
   const { profile, projects, editorial, sketches, siteUrl } = snapshot(content ?? page.context);
   const name = text(profile.name) || PERSON_NAME;
   const experience = list(profile.experience);

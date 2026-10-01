@@ -10,7 +10,7 @@ export interface SeoContent {
 
 export interface SeoPage {
   path: string;
-  kind: "home" | "portfolio" | "about" | "editorial" | "sketches" | "project" | "notFound";
+  kind: "home" | "portfolio" | "about" | "editorial" | "sketches" | "project" | "notFound" | "admin";
   siteName: string;
   canonical: string;
   title: string;

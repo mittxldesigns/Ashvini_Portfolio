@@ -38,14 +38,14 @@ export default function SeoHead() {
     setMeta("name", "twitter:image", image);
 
     let canonical = document.head.querySelector('link[rel="canonical"]');
-    if (page.kind === "notFound") {
+    if (["notFound", "admin"].includes(page.kind)) {
       canonical?.remove();
     } else if (!canonical) {
       canonical = document.createElement("link");
       canonical.rel = "canonical";
       document.head.appendChild(canonical);
     }
-    if (canonical && page.kind !== "notFound") canonical.href = page.canonical;
+    if (canonical && !["notFound", "admin"].includes(page.kind)) canonical.href = page.canonical;
 
     let schema = document.head.querySelector('#page-structured-data');
     const data = getStructuredData(page, image);

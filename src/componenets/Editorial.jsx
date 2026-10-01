@@ -334,7 +334,7 @@ function Editorial() {
           </div>
           <div className="ed-other-grid">
             {otherHalf.map((p) => (
-              <TransitionLink key={p.slug} to={`/portfolio/${p.id}`} className="ed-other-tile" aria-label={p.title}>
+              <TransitionLink key={p.slug} to={`/portfolio/${p.id}`} className={`ed-other-tile${p.nsfw ? " is-sensitive" : ""}`} aria-label={p.title}>
                 <picture>
                   <source srcSet={p.thumbAvif} type="image/avif" />
                   <img src={p.thumbWebp} alt={p.title} loading="lazy" decoding="async" />

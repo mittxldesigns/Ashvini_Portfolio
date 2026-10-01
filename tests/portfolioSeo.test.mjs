@@ -120,3 +120,13 @@ test("live plain project arrays update SEO without browser globals or captured c
   assert.equal(absoluteSeoUrl("https://private:secret@example.test/image.jpg"), "");
   assert.equal(absoluteSeoUrl("/media/a/preview", "https://cms.example.test"), "https://cms.example.test/media/a/preview");
 });
+
+test("owner editor metadata stays private and publishes no structured profile", () => {
+  for (const path of ["/admin", "/admin/setup"]) {
+    const page = getSeoForPath(path);
+    assert.equal(page.kind, "admin");
+    assert.equal(page.robots, "noindex,nofollow,noarchive");
+    assert.match(page.title, /Portfolio editor/);
+    assert.equal(getStructuredData(page), null);
+  }
+});
