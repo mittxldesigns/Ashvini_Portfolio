@@ -50,3 +50,17 @@ TODO next:
   2. Lower the default soft cap from 50 to ~32 (`s.maxPerDay ?? 50` in `main()` and popup default) so it stops just before LinkedIn's wall.
   3. Bump `version.txt` + manifest version so it self-reloads; run `node tests/rules.test.js` and the jsdom suite (`tests/test.js`, needs `npm i jsdom`).
 - Don't navigate the bot's own LinkedIn tab when checking status; read `#autoapply-status` from it or use the extension popup.
+
+## NEW FEATURE: inbox & lead monitor (requested 2026-10-01)
+Goal: the bot also watches LinkedIn for DMs, recruiter replies and potential leads, so Ashvini never misses one.
+Build inside the existing extension (`~/Downloads/linkedin-autoapply/`):
+- What to watch (read-only, from his logged-in session, same text/aria-based DOM approach as the apply flow):
+  1. Messaging inbox (`/messaging/`): new/unread threads, sender name + headline, first lines.
+  2. Application updates (`/my-items/saved-jobs/?cardType=APPLIED` / "Applied" tab): status changes like viewed, in review, rejected, "interviewing".
+  3. Notifications page: "viewed your profile" from recruiters/companies, InMails, connection requests from recruiters/hiring managers.
+- Classify each item (rules first, then the existing Claude Code bridge / Haiku fallback for anything unclear): `recruiter_reply`, `interview_request`, `client_lead` (someone wants to hire him for a project/commission), `rejection`, `spam/sales pitch`, `other`. Match against the `applied` history so replies are linked to the job he applied for.
+- Alerts: macOS notification for recruiter replies, interview requests and client leads (the extension already has `notifications`). Add a "Leads" tab in the popup: sender, company, linked job, category, time, link to the thread, plus a suggested reply draft.
+- NEVER send messages, accept connections or click anything that acts on his behalf automatically. Drafts only; Ashvini/Tanish sends. Never paste credentials/personal data anywhere.
+- Pacing: check every 20-40 min (random), only during active hours, max one tab driver (reuse the lock), pause while an application is in progress; don't hammer LinkedIn.
+- Optional later: also scan Gmail (kumarak9335@gmail.com) for recruiter emails via the Gmail connector, read-only.
+- Tests: extend `tests/sim.js` with a fake inbox/notifications page; verify classification + no-send guarantee.
