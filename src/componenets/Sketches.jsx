@@ -4,6 +4,7 @@ import HeaderNav from "./HeaderNav.jsx";
 import TransitionLink from "./TransitionLink.jsx";
 import { CONTRA_PROFILE } from "../data/projects.js";
 import { SKETCH_CHAPTERS, SKETCH_TIMELINE, sketches } from "../data/sketches.js";
+import { isViewTransitionRunning } from "../lib/viewTransition.js";
 
 // The artist side, built like a sketchbook rather than a website: pencil on paper,
 // headlines pasted in from magazine cutouts, notes in his handwriting.
@@ -106,7 +107,9 @@ function Sketches() {
   const pageRef = useRef(null);
   const dialogRef = useRef(null);
   const [open, setOpen] = useState(null);
+  const [arrivedOnPaper] = useState(() => isViewTransitionRunning());
   const [intro, setIntro] = useState(() => {
+    if (isViewTransitionRunning()) return false;
     try {
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
       if (sessionStorage.getItem("sk-intro-seen")) return false;
@@ -208,7 +211,7 @@ function Sketches() {
         <div className="sk-margin" aria-hidden="true" />
 
         {/* ---------- hero ---------- */}
-        <section className="sk-hero sk-anim" aria-labelledby="sk-title">
+        <section className={`sk-hero sk-anim${arrivedOnPaper ? " is-in sk-from-transition" : ""}`} aria-labelledby="sk-title">
           <div className="sk-hero-copy">
             <p className="sk-pencil-hand sk-kicker">the stuff I draw for myself (and sometimes for money)</p>
             <h1 id="sk-title" className="sk-h1">

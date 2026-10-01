@@ -1317,6 +1317,83 @@ p {
   }
 }
 
+/* One active work pill is shared across all three sides. */
+.work-switch a[aria-current] {
+  view-transition-name: work-pill;
+}
+
+::view-transition-group(work-pill) {
+  animation-duration: 680ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 20;
+}
+
+::view-transition-old(work-pill),
+::view-transition-new(work-pill) {
+  height: 100%;
+  animation-duration: 320ms;
+}
+
+/* The dark site stays underneath an opaque sheet of paper. */
+html[data-vt="paper-in"] .headernav,
+html[data-vt="paper-out"] .headernav {
+  view-transition-name: work-header;
+}
+
+html[data-vt="paper-out"] .headernav:not(.headernav--paper) {
+  background: linear-gradient(#0e0e0e 88%, rgba(14, 14, 14, 0));
+}
+
+::view-transition-group(work-header) {
+  animation: none;
+  z-index: 15;
+}
+
+::view-transition-old(work-header),
+::view-transition-new(work-header) {
+  animation-duration: 240ms;
+}
+
+html[data-vt="paper-in"]::view-transition-group(root),
+html[data-vt="paper-out"]::view-transition-group(root) {
+  animation: none;
+}
+
+html[data-vt="paper-in"]::view-transition-old(root),
+html[data-vt="paper-out"]::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  z-index: 1;
+}
+
+html[data-vt="paper-in"]::view-transition-new(root) {
+  animation: paper-lay-in 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: 50% 100%;
+  mix-blend-mode: normal;
+  box-shadow: 0 -24px 80px rgba(0, 0, 0, 0.42);
+  z-index: 2;
+}
+
+html[data-vt="paper-out"]::view-transition-old(root) {
+  animation: paper-lift-out 860ms cubic-bezier(0.55, 0, 0.3, 1) both;
+  transform-origin: 0 100%;
+  mix-blend-mode: normal;
+  box-shadow: 28px 36px 90px rgba(0, 0, 0, 0.4);
+  z-index: 2;
+}
+
+@keyframes paper-lay-in {
+  0% { transform: perspective(1400px) translate(3%, 110%) rotate(-6deg) rotateX(20deg); }
+  72% { transform: perspective(1400px) translate(-0.3%, 1.5%) rotate(0.5deg) rotateX(2deg); }
+  100% { transform: perspective(1400px) translate(0, 0) rotate(0) rotateX(0); }
+}
+
+@keyframes paper-lift-out {
+  0% { transform: perspective(1400px) translate(0, 0) rotate(0) rotateX(0) rotateY(0); }
+  28% { transform: perspective(1400px) translate(-2%, -6%) rotate(-3deg) rotateX(12deg) rotateY(-20deg); }
+  100% { transform: perspective(1400px) translate(-14%, -125%) rotate(-14deg) rotateX(24deg) rotateY(-36deg); }
+}
+
 /* Shared render: tile <-> hero */
 ::view-transition-group(hero) {
   animation-duration: 720ms;
@@ -2223,6 +2300,26 @@ html[data-vt="swap"]::view-transition-old(root) {
   background: #008fef;
 }
 
+/* A small paper tab for the sketchbook, even on the dark side. */
+.work-switch .work-switch-sketches {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+  font-family: "Courier Prime", "Courier New", monospace;
+  font-size: 12px;
+  color: #49443c;
+  background: #f2eddf;
+  border-radius: 4px 8px 5px 7px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  transform: rotate(-1deg);
+}
+
+.work-switch-sketches svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.3; flex: none; }
+.headernav .work-switch .work-switch-sketches:hover { color: #2b2f34; }
+.headernav .work-switch .work-switch-sketches[aria-current="page"] { color: #2b2f34; background: #eae2ce; }
+.work-switch-sketches[aria-current]::after { content: ""; position: absolute; left: 11px; right: 9px; bottom: 3px; border-bottom: 1px solid #786b55; transform: rotate(-1deg); }
+
 /* editorial: the other half (3D) */
 .ed-other {
   display: grid;
@@ -2610,6 +2707,17 @@ html[data-vt="swap"]::view-transition-old(root) {
   isolation: isolate;
 }
 
+.sk-page::before {
+  content: "";
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 12px;
+  background: linear-gradient(90deg, rgba(97, 81, 58, 0.1), transparent);
+  border-left: 3px solid rgba(255, 255, 255, 0.7);
+  pointer-events: none;
+  z-index: 40;
+}
+
 .sk-page.is-waiting { visibility: hidden; }
 
 .sk-paper { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
@@ -2670,6 +2778,10 @@ html[data-vt="swap"]::view-transition-old(root) {
   animation: cut-drop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
   animation-delay: calc(var(--cd, 0ms) + var(--i) * 70ms);
 }
+
+/* The sheet transition owns the entrance; capture a finished hero. */
+.sk-from-transition .cut-l { opacity: 1; animation: none; }
+.sk-from-transition .pl { stroke-dashoffset: 0; transition: none; }
 
 @keyframes cut-drop {
   0% { opacity: 0; transform: translateY(calc(var(--y) - 0.35em)) rotate(calc(var(--r) * -2.5)) scale(calc(var(--s) * 1.35)); }
@@ -3024,7 +3136,16 @@ html[data-vt="swap"]::view-transition-old(root) {
 }
 
 @media (max-width: 420px) {
+  .headernav { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 20px; padding: 12px 20px 14px; }
+  .header-actions { display: contents; }
+  .headernav .name { justify-self: start; }
+  .icon-pic { grid-column: 2; grid-row: 1; width: 34px; height: 34px; }
+  .work-switch { grid-column: 1 / -1; grid-row: 2; justify-self: start; gap: 5px; padding: 4px; }
+  .work-switch a { padding: 7px 12px; font-size: 12px; }
   .header-contact { display: none; }
+  .headernav--paper { background: linear-gradient(#fdfcf7 88%, rgba(253, 252, 247, 0)); }
+  .ed-hero { padding-top: 148px; }
+  .about-page { padding-top: 148px; }
 }
 
 @media (max-width: 900px) {
@@ -3114,4 +3235,11 @@ html[data-vt="swap"]::view-transition-old(root) {
 
   .sk-close { padding: 40px 20px 80px; }
   .sk-close-note { font-size: 28px; }
+}
+
+@media (max-width: 420px) {
+  .sk-hero { padding-top: 148px; }
+  .sk-tabs { padding-top: 132px; }
+  .sk-chapter,
+  .sk-journey { scroll-margin-top: 220px; }
 }

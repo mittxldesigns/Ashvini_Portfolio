@@ -31,7 +31,8 @@ function HeaderNav() {
           <TransitionLink to="/editorial" aria-current={side === "editorial" ? "page" : undefined}>
             Social <span className="work-switch-long">&amp; editorial</span>
           </TransitionLink>
-          <TransitionLink to="/sketches" aria-current={side === "sketches" ? "page" : undefined}>
+          <TransitionLink className="work-switch-sketches" to="/sketches" aria-current={side === "sketches" ? "page" : undefined}>
+            <svg viewBox="0 0 18 18" aria-hidden="true"><path d="m3 13 8-8 3 3-8 8-4 1 1-4ZM10 6l3 3M3 13l3 3" /></svg>
             Sketches
           </TransitionLink>
         </nav>
