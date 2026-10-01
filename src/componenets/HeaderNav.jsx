@@ -2,17 +2,19 @@ import { useLocation, useMatch } from "react-router-dom";
 import TransitionLink from "./TransitionLink.jsx";
 import { gridState } from "../lib/gridState.js";
 import { CONTRA_PROFILE } from "../data/projects.js";
+import { getSiteProfile } from "../data/siteProfile.js";
 
 const batla = "/avatar.webp";
 
 function HeaderNav() {
+  const profile = getSiteProfile();
   const detail = useMatch("/portfolio/:id");
   const { pathname } = useLocation();
   // which half of the work you're looking at; About shows neither as active
   const side = pathname.startsWith("/editorial") ? "editorial" : pathname.startsWith("/sketches") ? "sketches" : pathname.startsWith("/portfolio") ? "3d" : null;
 
   return (
-    <div className={side === "sketches" ? "headernav headernav--paper" : "headernav"}>
+    <div className={side === "sketches" ? "headernav headernav--paper" : side === "editorial" ? "headernav headernav--editorial" : "headernav"}>
       <TransitionLink
         className="name"
         to={detail ? "/portfolio" : "/"}
@@ -21,7 +23,7 @@ function HeaderNav() {
           if (detail) gridState.returnToId = Number(detail.params.id);
         }}
       >
-        Ashvini
+        {profile.name.split(" ")[0]}
       </TransitionLink>
       <div className="header-actions">
         <nav className="work-switch" aria-label="Choose the type of work">
@@ -38,7 +40,7 @@ function HeaderNav() {
         </nav>
         <a
           className="header-contact"
-          href={CONTRA_PROFILE}
+          href={profile.contraUrl || CONTRA_PROFILE}
           target="_blank"
           rel="noreferrer"
           aria-label="Message Ashvini about a project on Contra"
@@ -46,7 +48,7 @@ function HeaderNav() {
           Start a project <span aria-hidden="true">↗</span>
         </a>
         <TransitionLink className="icon-pic" to="/about">
-          <img src={batla} alt="Ashvini Kumar" />
+          <img src={profile.avatarUrl || batla} alt={profile.name} />
         </TransitionLink>
       </div>
     </div>

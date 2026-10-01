@@ -12,7 +12,7 @@ export function computeLayout() {
   // would land on the same item.
   const n = projects.length;
   let size = Math.max(6, Math.ceil(Math.max(vw, vh) / step) + 1);
-  while (size % n === 0 || (size * (size - 1)) % n === 0) size += 1;
+  while (n > 2 && (size % n === 0 || (size * (size - 1)) % n === 0)) size += 1;
   return { vw, vh, tile, step, size, block: size * step };
 }
 

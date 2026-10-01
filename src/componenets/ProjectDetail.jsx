@@ -4,6 +4,9 @@ import HeaderNav from "./HeaderNav.jsx";
 import ProjectStrip from "./ProjectStrip.jsx";
 import LiveScene from "./LiveScene.jsx";
 import TransitionLink from "./TransitionLink.jsx";
+import ArtworkWarning from "./ArtworkWarning.jsx";
+import SketchLightboxImage from "./SketchLightboxImage.jsx";
+import { getSiteProfile } from "../data/siteProfile.js";
 import dnaHelixFull from "../assets/work/dna-helix-full.png";
 import {
   projects,
@@ -33,6 +36,8 @@ export default function ProjectDetail() {
   const project = getProjectById(id);
   const [heroLoadedId, setHeroLoadedId] = useState(null);
   const [liveId, setLiveId] = useState(null);
+  const [consentId, setConsentId] = useState(null);
+  const [frameSelection, setFrameSelection] = useState({ projectId: null, index: 0 });
   const projectId = project?.id;
   const onLive = useCallback(
     (live) => setLiveId(live ? projectId : null),
@@ -122,6 +127,10 @@ export default function ProjectDetail() {
     );
   }
 
+  if (project.nsfw && consentId !== project.id) return <><HeaderNav /><main className="project-sensitive-gate"><ArtworkWarning item={project} titleId="project-warning-title" onClose={close} onReveal={() => setConsentId(project.id)} /></main></>;
+  const frames = project.frames || [];
+  const frameIndex = frameSelection.projectId === project.id ? frameSelection.index : 0;
+  const frame = frames[frameIndex];
   const isCaseStudy = project.roles.length > 0;
   const isDna = project.slug === "dna-helix";
   const meta = [
@@ -174,7 +183,7 @@ export default function ProjectDetail() {
           <div className="project-inquiry reveal" style={{ "--d": "240ms" }}>
             <p>Need 3D for your next project?</p>
             <a
-              href={CONTRA_PROFILE}
+              href={project.contraUrl || getSiteProfile().contraUrl || CONTRA_PROFILE}
               target="_blank"
               rel="noreferrer"
               aria-label="Message Ashvini about a project on Contra"
@@ -226,7 +235,7 @@ export default function ProjectDetail() {
             style={{ viewTransitionName: "hero" }}
           >
             <div className="project-hero-motion">
-              {isDna ? (
+              {frame ? <SketchLightboxImage key={frame.full} item={{ ...project, ...frame, slug: `${project.slug}-${frameIndex}` }} /> : isDna ? (
                 <img
                   className="project-hero-full project-hero-full--dna is-loaded"
                   src={dnaHelixFull}
@@ -258,6 +267,9 @@ export default function ProjectDetail() {
                 </>
               )}
             </div>
+            {frames.length > 1 && <nav className="project-frame-nav" aria-label="Project images">
+              <button type="button" onClick={() => setFrameSelection({ projectId: project.id, index: (frameIndex - 1 + frames.length) % frames.length })} aria-label="Previous project image">←</button><span>{frameIndex + 1} / {frames.length}</span><button type="button" onClick={() => setFrameSelection({ projectId: project.id, index: (frameIndex + 1) % frames.length })} aria-label="Next project image">→</button>
+            </nav>}
             <LiveScene
               key={project.id}
               url={project.splineScene}

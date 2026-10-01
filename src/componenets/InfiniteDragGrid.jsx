@@ -14,7 +14,7 @@ import {
   wrap,
 } from "../lib/gridLayout.js";
 import { gridState } from "../lib/gridState.js";
-import { PERSON_NAME } from "../data/seo.js";
+import { getSiteProfile } from "../data/siteProfile.js";
 import { tagSharedElement, withViewTransition } from "../lib/viewTransition.js";
 
 const EASE = 0.2; // fraction of remaining distance covered per 60fps frame
@@ -121,7 +121,7 @@ export default function InfiniteDragGrid() {
       return (
         <Tile
           key={key}
-          className={isIn ? (intro ? "tile is-in" : "tile is-in is-static") : "tile"}
+          className={`${isIn ? (intro ? "tile is-in" : "tile is-in is-static") : "tile"}${item.nsfw ? " is-sensitive" : ""}`}
           data-id={item.id}
           href={primary ? `/portfolio/${item.id}` : undefined}
           aria-label={primary ? item.title : undefined}
@@ -470,7 +470,7 @@ export default function InfiniteDragGrid() {
 
   return (
     <div ref={viewportRef} className="viewport">
-      <h1 className="sr-only">Selected 3D work by {PERSON_NAME}</h1>
+      <h1 className="sr-only">Selected 3D work by {getSiteProfile().name}</h1>
       <div ref={gridRef} className="grid">
         {tiles}
       </div>

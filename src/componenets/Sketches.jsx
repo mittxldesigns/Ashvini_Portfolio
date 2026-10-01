@@ -6,7 +6,11 @@ import { CONTRA_PROFILE } from "../data/projects.js";
 import { SKETCH_CHAPTERS, SKETCH_TIMELINE, sketches } from "../data/sketches.js";
 import SketchPaper from "./SketchPaper.jsx";
 import SketchLightboxImage from "./SketchLightboxImage.jsx";
+import ArtworkWarning from "./ArtworkWarning.jsx";
+import { moveGallerySelection } from "../lib/galleryNavigation.js";
+import { getSiteProfile } from "../data/siteProfile.js";
 import { fullSketchImages, warmSketchNeighbors, warmSketchPreviews } from "../lib/sketchImageCache.js";
+import { mayPreloadArtwork, needsArtworkConsent } from "../lib/artworkConsent.js";
 import { isViewTransitionRunning, transitionsSettled } from "../lib/viewTransition.js";
 import { claimSketchPreloaderWhenActive, shouldShowSketchPreloader } from "../lib/sketchPreloader.js";
 import SketchbookPreloader from "./SketchbookPreloader.jsx";
@@ -73,6 +77,7 @@ const D = {
 
 function Sketches({ loaderPreview = false }) {
   const [params] = useSearchParams();
+  const profile = getSiteProfile();
   const pageRef = useRef(null);
   const dialogRef = useRef(null);
   const backdropPress = useRef(false);
@@ -132,15 +137,22 @@ function Sketches({ loaderPreview = false }) {
   }, [params, blockingIntro]);
 
   const item = open ? open.list[open.index] : null;
-  const close = useCallback(() => setOpen(null), []);
-  const step = useCallback((delta) => setOpen((o) => (o ? { ...o, previewSrc: undefined, index: (o.index + delta + o.list.length) % o.list.length } : o)), []);
-  const openSketch = (list, index, event) => setOpen({ list, index, previewSrc: event.currentTarget.querySelector("img")?.currentSrc });
+  const needsConsent = needsArtworkConsent(item, open?.consentSlug);
+  const frameIndex = open?.frameIndex || 0;
+  const frameCount = item?.frames?.length || 1;
+  const frame = item ? { ...item, ...item.frames?.[frameIndex], slug: `${item.slug}-${frameIndex}` } : null;
+  const close = useCallback(() => setOpen(null), [setOpen]);
+
+  const step = useCallback((delta) => setOpen((selection) => moveGallerySelection(selection, delta)), [setOpen]);
+  const openSketch = (list, index, event) => setOpen({ list, index, frameIndex: 0, previewSrc: event.currentTarget.querySelector("img")?.currentSrc });
+  const warmArtwork = (art) => { if (mayPreloadArtwork(art)) fullSketchImages.load(art.full).catch(() => {}); };
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || needsConsent) return;
     warmSketchNeighbors(open.list, open.index);
     warmSketchPreviews(open.list);
-  }, [open]);
+    if (frameCount > 1 && !item.nsfw) warmSketchNeighbors(item.frames, frameIndex);
+  }, [open, needsConsent, item, frameCount, frameIndex]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -157,13 +169,13 @@ function Sketches({ loaderPreview = false }) {
   }, [item, step]);
 
   const scrollTo = (id) => pageRef.current?.querySelector(`#${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  const hero = bySlug("batman-part-ii-akira");
+  const hero = bySlug("batman-part-ii-akira") || sketches[0];
   const sheetNo = (s) => String(s.id).padStart(2, "0");
   const chapterWord = { posters: "POSTERS", characters: "CHARACTERS", paper: "ON PAPER", portraits: "FACES" };
   const chapterNote = {
     posters: "posters for films i'd queue up for",
     characters: "stills i paused on and couldn't let go of",
-    paper: "pencil, ink, eraser crumbs · 2017 to 2020",
+    paper: "pencil, ink, eraser crumbs · 2017 onwards",
     portraits: "people. me, once.",
   };
 
@@ -183,7 +195,7 @@ function Sketches({ loaderPreview = false }) {
         <section className={`sk-hero sk-anim${arrivedOnPaper ? " is-in sk-from-transition" : ""}`} aria-labelledby="sk-title">
           <div className="sk-hero-copy">
             <div className="sk-hero-heading">
-              <p className="sk-pencil-hand sk-kicker">the stuff I draw for myself (and sometimes for money)</p>
+              <p className="sk-pencil-hand sk-kicker">{profile.sketchesKicker}</p>
               <h1 id="sk-title" className="sk-h1">
                 <Cutout text="SKETCHBOOK" size={1} seed={3} delay={150} />
               </h1>
@@ -191,12 +203,11 @@ function Sketches({ loaderPreview = false }) {
             </div>
             <div className="sk-hero-details">
               <p className="sk-type sk-lede">
-                Started with a Deadpool sketch in 2017 and never really stopped. Graphite first, then ink
-                covers people actually paid for, and these days mostly Photoshop, one movie still at a time.
+                {profile.sketchesIntro}
               </p>
               <div className="sk-actions">
                 <button type="button" className="sk-btn" onClick={() => scrollTo("sk-posters")}>flip through ↓</button>
-                <a className="sk-btn sk-btn-alt" href={CONTRA_PROFILE} target="_blank" rel="noreferrer">commission a piece ↗</a>
+                <a className="sk-btn sk-btn-alt" href={profile.contraUrl || CONTRA_PROFILE} target="_blank" rel="noreferrer">commission a piece ↗</a>
               </div>
               <ul className="sk-margin-notes sk-pencil-hand" aria-label="Quick facts">
                 <li>2017: first sketch (Deadpool, obviously)</li>
@@ -206,10 +217,10 @@ function Sketches({ loaderPreview = false }) {
             </div>
           </div>
 
-          <figure className="sk-pin sk-hero-pin" style={{ "--t": "3deg" }}>
+          {hero && <figure className="sk-pin sk-hero-pin" style={{ "--t": "3deg" }}>
             <span className="sk-tape" style={{ "--tr": "-28deg", left: "-20px", top: "-12px" }} />
             <span className="sk-tape" style={{ "--tr": "34deg", right: "-22px", top: "-10px" }} />
-            <button type="button" className="sk-pin-img" onClick={(event) => openSketch(sketches, hero.id - 1, event)} onPointerEnter={() => fullSketchImages.load(hero.full).catch(() => {})} onFocus={() => fullSketchImages.load(hero.full).catch(() => {})} aria-label={`Open ${hero.title}`}>
+            <button type="button" className={`sk-pin-img${hero.nsfw ? " is-sensitive" : ""}`} onClick={(event) => openSketch(sketches, sketches.indexOf(hero), event)} onPointerEnter={() => warmArtwork(hero)} onFocus={() => warmArtwork(hero)} aria-label={`${hero.nsfw ? "View sensitive artwork" : "Open"} ${hero.title}`}>
               <picture>
                 <source srcSet={hero.thumbAvif} type="image/avif" />
                 <img src={hero.thumbWebp} width="496" height="620" fetchPriority="high" alt={`${hero.title}, ${hero.medium}, ${hero.year}, by Ashvini Kumar`} />
@@ -218,7 +229,7 @@ function Sketches({ loaderPreview = false }) {
             <figcaption className="sk-pencil-hand sk-pin-cap">{hero.title.toLowerCase()} · {hero.year}</figcaption>
             <p className="sk-pencil-hand sk-callout">newest one ↓</p>
             <svg className="sk-callout-loop" viewBox="0 0 130 50" aria-hidden="true"><Line d={D.loop} w={1.6} delay={1200} /></svg>
-          </figure>
+          </figure>}
 
           <svg className="sk-doodle sk-d-pencil" viewBox="0 0 100 116" aria-hidden="true"><Line d={D.pencil} w={1.6} delay={600} /></svg>
           <svg className="sk-doodle sk-d-star" viewBox="0 0 60 60" aria-hidden="true"><Line d={D.star} w={1.4} delay={1400} /></svg>
@@ -229,7 +240,7 @@ function Sketches({ loaderPreview = false }) {
         <nav className="sk-tabs" aria-label="Sketchbook sections">
           {SKETCH_CHAPTERS.map((c, i) => (
             <button key={c.id} type="button" onClick={() => scrollTo(`sk-${c.id}`)} style={{ "--t": `${jitter(i + 2, 1.4)}deg` }}>
-              {chapterWord[c.id].toLowerCase()}
+              {(chapterWord[c.id] || c.label).toLowerCase()}
             </button>
           ))}
           <button type="button" onClick={() => scrollTo("sk-journey")} style={{ "--t": "1deg" }}>how it started</button>
@@ -241,15 +252,15 @@ function Sketches({ loaderPreview = false }) {
           return (
             <section className="sk-chapter sk-anim" id={`sk-${c.id}`} key={c.id} aria-labelledby={`sk-h-${c.id}`}>
               <header className="sk-chapter-head">
-                <h2 id={`sk-h-${c.id}`} className="sk-h2"><Cutout text={chapterWord[c.id]} size={0.62} seed={ci * 13 + 5} /></h2>
-                <p className="sk-pencil-hand sk-chapter-note">{chapterNote[c.id]}</p>
+                <h2 id={`sk-h-${c.id}`} className="sk-h2"><Cutout text={chapterWord[c.id] || c.label.toUpperCase()} size={0.62} seed={ci * 13 + 5} /></h2>
+                <p className="sk-pencil-hand sk-chapter-note">{chapterNote[c.id] || c.blurb}</p>
                 <svg className="sk-chapter-scribble" viewBox="0 0 126 40" aria-hidden="true"><Line d={D.scribble} w={1.4} delay={400} /></svg>
               </header>
               <div className={`sk-board sk-board-${c.id}`}>
                 {list.map((s, i) => (
                   <figure className="sk-pin" key={s.slug} style={{ "--t": `${jitter(i + ci * 7, 1.8)}deg`, "--d": `${Math.min(i, 8) * 70}ms` }}>
                     <span className="sk-tape" style={{ "--tr": `${i % 2 ? 30 : -30}deg`, [i % 2 ? "right" : "left"]: "-18px", top: "-12px" }} />
-                    <button type="button" className="sk-pin-img" onClick={(event) => openSketch(list, i, event)} onPointerEnter={() => fullSketchImages.load(s.full).catch(() => {})} onFocus={() => fullSketchImages.load(s.full).catch(() => {})} aria-label={`Open ${s.title}`}>
+                    <button type="button" className={`sk-pin-img${s.nsfw ? " is-sensitive" : ""}`} onClick={(event) => openSketch(list, i, event)} onPointerEnter={() => warmArtwork(s)} onFocus={() => warmArtwork(s)} aria-label={`${s.nsfw ? "View sensitive artwork" : "Open"} ${s.title}`}>
                       <picture>
                         <source srcSet={s.thumbAvif} type="image/avif" />
                         <img src={s.thumbWebp} alt={`${s.title}, ${s.medium}, ${s.year}, by Ashvini Kumar`} loading="lazy" decoding="async" />
@@ -257,7 +268,7 @@ function Sketches({ loaderPreview = false }) {
                     </button>
                     <figcaption>
                       <span className="sk-pencil-hand sk-pin-cap">{s.title.toLowerCase()}</span>
-                      <span className="sk-type sk-pin-meta">no.{sheetNo(s)} · {s.medium.toLowerCase()} · {s.year}</span>
+                      <span className="sk-type sk-pin-meta">no.{sheetNo(s)} · {s.medium?.toLowerCase() || "artwork"} · {s.year}</span>
                     </figcaption>
                   </figure>
                 ))}
@@ -273,13 +284,14 @@ function Sketches({ loaderPreview = false }) {
             <svg className="sk-line-draw" viewBox="0 0 1000 40" preserveAspectRatio="none" aria-hidden="true">
               <Line d="M4 22 C 120 10, 220 32, 340 20 S 560 12, 680 24 S 880 30, 996 18" w={1.6} delay={200} />
             </svg>
-            {SKETCH_TIMELINE.map((t, i) => {
+            {(profile.sketchTimeline || SKETCH_TIMELINE).map((t, i) => {
               const s = bySlug(t.slug);
+              if (!s) return null;
               return (
                 <li key={t.year} style={{ "--d": `${300 + i * 200}ms`, "--t": `${jitter(i + 30, 3)}deg` }}>
                   <span className="sk-dot" />
                   <span className="sk-pencil-hand sk-year">{t.year}</span>
-                  <button type="button" className="sk-scrap" onClick={(event) => openSketch(sketches, s.id - 1, event)} onPointerEnter={() => fullSketchImages.load(s.full).catch(() => {})} onFocus={() => fullSketchImages.load(s.full).catch(() => {})} aria-label={`Open ${s.title}`}>
+                  <button type="button" className={`sk-scrap${s.nsfw ? " is-sensitive" : ""}`} onClick={(event) => openSketch(sketches, sketches.indexOf(s), event)} onPointerEnter={() => warmArtwork(s)} onFocus={() => warmArtwork(s)} aria-label={`${s.nsfw ? "View sensitive artwork" : "Open"} ${s.title}`}>
                     <img src={s.thumbWebp} alt={`${s.title} (${t.year})`} loading="lazy" />
                   </button>
                   <span className="sk-pencil-hand sk-tnote">{t.note}</span>
@@ -292,10 +304,10 @@ function Sketches({ loaderPreview = false }) {
         {/* ---------- closing ---------- */}
         <section className="sk-close sk-anim">
           <h2 className="sk-h2"><Cutout text="WANT ONE" size={0.7} seed={57} /></h2>
-          <p className="sk-pencil-hand sk-close-note">posters, covers, portraits, your favourite character. dm is open.</p>
+          <p className="sk-pencil-hand sk-close-note">{profile.sketchesClosingNote}</p>
           <div className="sk-actions sk-actions-center">
-            <a className="sk-btn" href={CONTRA_PROFILE} target="_blank" rel="noreferrer">commission a piece ↗</a>
-            <a className="sk-btn sk-btn-alt" href="https://instagram.com/ashvini_kmr" target="_blank" rel="noreferrer">@ashvini_kmr ↗</a>
+            <a className="sk-btn" href={profile.contraUrl || CONTRA_PROFILE} target="_blank" rel="noreferrer">commission a piece ↗</a>
+            <a className="sk-btn sk-btn-alt" href={profile.instagramUrl} target="_blank" rel="noreferrer">@ashvini_kmr ↗</a>
           </div>
           <p className="sk-type sk-other">
             other sides of me: <TransitionLink to="/portfolio">3d &amp; web3d</TransitionLink> · <TransitionLink to="/editorial">social &amp; editorial</TransitionLink>
@@ -315,21 +327,25 @@ function Sketches({ loaderPreview = false }) {
         }}
         aria-label={item ? item.title : "Artwork"}
       >
-        {item && (
+        {item && needsConsent ? (
+          <ArtworkWarning item={item} titleId="sk-warning-title" onClose={close} onReveal={() => setOpen((o) => ({ ...o, consentSlug: item.slug }))} />
+        ) : item && (
           <div className="sk-lightbox-inner">
             <div className="sk-lightbox-stage">
-              <SketchLightboxImage key={item.full} item={item} previewSrc={open.previewSrc} />
+              <SketchLightboxImage key={frame.full} item={frame} previewSrc={open.previewSrc} />
             </div>
             <div className="sk-lightbox-copy">
               <span className="sk-type">no.{sheetNo(item)} · {item.year}</span>
               <h2 className="sk-pencil-hand">{item.title.toLowerCase()}</h2>
               <p className="sk-type">{item.note}</p>
               <p className="sk-type sk-lb-medium">{item.medium}</p>
-              <a className="sk-type" href={item.url} target="_blank" rel="noreferrer">on instagram ↗</a>
+
+              {(frame.mediaNote || item.mediaNote) && <p className="sk-type">{frame.mediaNote || item.mediaNote}</p>}
+              {(frame.url || item.url) && <a className="sk-type" href={frame.url || item.url} target="_blank" rel="noreferrer">on instagram ↗</a>}
             </div>
             <div className="sk-lightbox-nav">
                 <button type="button" onClick={() => step(-1)} aria-label="Previous">←</button>
-                <span className="sk-type">{open.index + 1} / {open.list.length}</span>
+                <span className="sk-type">{frameCount > 1 ? `Version ${frameIndex + 1} / ${frameCount}` : `${open.index + 1} / ${open.list.length}`}</span>
                 <button type="button" onClick={() => step(1)} aria-label="Next">→</button>
             </div>
             <button type="button" className="sk-lightbox-close" onClick={close} aria-label="Close">×</button>

@@ -1,24 +1,26 @@
 import HeaderNav from "./HeaderNav.jsx";
 import TransitionLink from "./TransitionLink.jsx";
 import { caseStudies, projects } from "../data/projects.js";
-import { timeline } from "../data/experience.js";
-import { faq } from "../data/faq.js";
+import { getSiteProfile } from "../data/siteProfile.js";
 
 const batla = "/avatar.webp";
 
 function About() {
+  const profile = getSiteProfile();
+  const timeline = profile.experience;
+  const faq = profile.faq;
   return (
     <>
       <HeaderNav />
       <div className="about-page">
         <div className="about-intro">
-          <img className="about-avatar" src={batla} alt="Ashvini Kumar" />
-          <h1>Ashvini Kumar</h1>
-          <p className="about-title">Top 1% Spline Expert on Contra</p>
+          <img className="about-avatar" src={profile.avatarUrl || batla} alt={profile.name} />
+          <h1>{profile.name}</h1>
+          <p className="about-title">{profile.aboutTitle}</p>
 
           <div className="about-stats">
             <div>
-              <strong>4.86★</strong>
+              <strong>{profile.rating}</strong>
               <span>Contra rating</span>
             </div>
             <div>
@@ -26,7 +28,7 @@ function About() {
               <span>selected works</span>
             </div>
             <div>
-              <strong>India</strong>
+              <strong>{profile.location}</strong>
               <span>based, remote</span>
             </div>
           </div>
@@ -34,10 +36,7 @@ function About() {
 
         <div className="about-main">
           <p className="para about-bio">
-            I build product models and interactive 3D scenes for the web.
-            Selected projects include backgrounds for HeyGen, bottle models
-            for Athletic Power, and a scroll-driven visual experience for
-            Mebrafino.
+            {profile.aboutBio}
           </p>
 
           <div className="about-sides">
@@ -74,13 +73,7 @@ function About() {
           </div>
 
           <div className="about-skills">
-            <span>Spline</span>
-            <span>Blender</span>
-            <span>Autodesk 3ds Max</span>
-            <span>V-Ray</span>
-            <span>ZBrush</span>
-            <span>Framer</span>
-            <span>Webflow</span>
+            {profile.skills.map((skill) => <span key={skill}>{skill}</span>)}
           </div>
 
           <div className="about-faq">
@@ -95,7 +88,7 @@ function About() {
 
           <div className="case-studies">
             <h2>More work</h2>
-            {caseStudies.map((c) => (
+            {(profile.caseStudies || caseStudies).map((c) => (
               <a key={c.url} href={c.url} target="_blank" rel="noreferrer">
                 <span>{c.title}</span>
                 <span aria-hidden="true">↗</span>
@@ -106,7 +99,7 @@ function About() {
           <div className="detail-actions">
             <a
               className="cta"
-              href="https://contra.com/ashvini_kmr?r=mittxldesigns"
+              href={profile.contraUrl}
               target="_blank"
               rel="noreferrer"
             >
@@ -114,7 +107,7 @@ function About() {
             </a>
             <a
               className="cta cta-outline"
-              href="https://instagram.com/ashvini_kmr"
+              href={profile.instagramUrl}
               target="_blank"
               rel="noreferrer"
             >
@@ -122,7 +115,7 @@ function About() {
             </a>
             <a
               className="cta cta-outline"
-              href="https://community.spline.design/bettercallashvini"
+              href={profile.splineUrl}
               target="_blank"
               rel="noreferrer"
             >

@@ -4,7 +4,12 @@ import HeaderNav from "./HeaderNav.jsx";
 import TransitionLink from "./TransitionLink.jsx";
 import { CONTRA_PROFILE, projects } from "../data/projects.js";
 import { EDITORIAL_CATEGORIES, editorialPosts } from "../data/editorial.js";
-import { AUDIENCE_CHECKED, COMBINED_FOLLOWERS, publishers } from "../data/experience.js";
+import { getSiteProfile } from "../data/siteProfile.js";
+import SketchLightboxImage from "./SketchLightboxImage.jsx";
+import ArtworkWarning from "./ArtworkWarning.jsx";
+import { moveGallerySelection } from "../lib/galleryNavigation.js";
+import { mayPreloadArtwork, needsArtworkConsent } from "../lib/artworkConsent.js";
+import { fullSketchImages, warmSketchNeighbors } from "../lib/sketchImageCache.js";
 
 const byCategory = (id) => editorialPosts.filter((p) => p.category === id);
 // a few 3D pieces to show the other half of the work, linking into the grid
@@ -14,13 +19,13 @@ const otherHalf = ["nothing-headphones", "teenage-engineering-tp7", "heygen-glas
 
 function Thumb({ post, eager = false, className = "" }) {
   return (
-    <picture className={className}>
+    <picture className={`${className}${post.nsfw ? " is-sensitive" : ""}`}>
       <source srcSet={post.thumbAvif} type="image/avif" />
       <img
         src={post.thumbWebp}
-        alt={`${post.title}, social post designed for ${post.client}`}
-        width="540"
-        height="675"
+        alt={`${post.title}, social post${post.client ? ` designed for ${post.client}` : ""}`}
+        width={post.width || 540}
+        height={post.height || 675}
         loading={eager ? "eager" : "lazy"}
         decoding="async"
         draggable="false"
@@ -33,6 +38,8 @@ function Thumb({ post, eager = false, className = "" }) {
 // editorial or thumbnail roles lands on exactly that work. ?type=<category> jumps to a chapter.
 function Editorial() {
   const [params] = useSearchParams();
+  const profile = getSiteProfile();
+  const { publishers, audienceLabel, audienceChecked } = profile;
   const pageRef = useRef(null);
   const dialogRef = useRef(null);
   const backdropPress = useRef(false);
@@ -42,13 +49,25 @@ function Editorial() {
   // hero wall: four columns, each a different rotation of the posts
   const columns = useMemo(() => {
     const n = editorialPosts.length;
-    return [0, 4, 8, 11].map((offset) => Array.from({ length: n }, (_, i) => editorialPosts[(i + offset) % n]));
+    return [0, 4, 8, 11].map((offset) => Array.from({ length: Math.min(n, 12) }, (_, i) => editorialPosts[(i + offset) % n]));
   }, []);
 
-  const openPost = (list, index) => setLightbox({ list, index });
-  const close = useCallback(() => setLightbox(null), []);
-  const step = useCallback((delta) => setLightbox((lb) => (lb ? { ...lb, index: (lb.index + delta + lb.list.length) % lb.list.length } : lb)), []);
+  const openPost = (list, index) => setLightbox({ list, index, frameIndex: 0 });
+  const close = useCallback(() => setLightbox(null), [setLightbox]);
+  const step = useCallback((delta) => setLightbox((selection) => moveGallerySelection(selection, delta)), [setLightbox]);
   const open = lightbox ? lightbox.list[lightbox.index] : null;
+  const frameCount = open?.frames?.length || 1;
+  const frameIndex = lightbox?.frameIndex || 0;
+  const frame = open ? { ...open, ...open.frames?.[frameIndex], slug: `${open.slug}-${frameIndex}` } : null;
+  const needsConsent = needsArtworkConsent(open, lightbox?.consentSlug);
+
+  const warmArtwork = (post) => { if (mayPreloadArtwork(post)) fullSketchImages.load(post.full).catch(() => {}); };
+
+  useEffect(() => {
+    if (!open || needsConsent) return;
+    warmSketchNeighbors(lightbox.list, lightbox.index);
+    if (frameCount > 1 && !open.nsfw) warmSketchNeighbors(open.frames, frameIndex);
+  }, [open, needsConsent, lightbox, frameCount, frameIndex]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -93,6 +112,8 @@ function Editorial() {
   const label = (id) => EDITORIAL_CATEGORIES.find((c) => c.id === id)?.label ?? "";
   const scrollTo = (id) => pageRef.current?.querySelector(`#${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
 
+  const highlights = editorialPosts.filter((post) => post.highlight);
+  const extraCategories = EDITORIAL_CATEGORIES.filter((category) => !["news", "campaigns", "retrospectives", "data"].includes(category.id));
   const news = byCategory("news"), campaigns = byCategory("campaigns"), retro = byCategory("retrospectives"), data = byCategory("data");
 
   return (
@@ -114,24 +135,22 @@ function Editorial() {
           </div>
           <div className="ed-hero-shade" aria-hidden="true" />
           <div className="ed-hero-copy">
-            <p className="ed-kicker reveal">Ashvini Kumar · social &amp; editorial design</p>
+            <p className="ed-kicker reveal">{profile.name} · social &amp; editorial design</p>
             <h1 id="ed-title" className="reveal" style={{ "--d": "80ms" }}>
-              Built to stop<br />the scroll.
+              {profile.editorialTitle.split("\n").map((line, index) => <span className="ed-title-line" key={index}>{line}</span>)}
             </h1>
             <p className="ed-hero-lede reveal" style={{ "--d": "160ms" }}>
-              Before I got into 3D, I was a newsroom designer, and I still am. For six years I've
-              made the covers, thumbnails and posts that FandomWire and Animated Times put out
-              every day: Marvel, DC and everything in between, often on tight deadlines.
+              {profile.editorialIntro}
             </p>
             <div className="ed-hero-actions reveal" style={{ "--d": "240ms" }}>
-              <a className="cta" href={CONTRA_PROFILE} target="_blank" rel="noreferrer">Work with me</a>
-              <button type="button" className="cta cta-outline" onClick={() => scrollTo("chapter-news")}>See the work ↓</button>
+              <a className="cta" href={profile.contraUrl || CONTRA_PROFILE} target="_blank" rel="noreferrer">Work with me</a>
+              <button type="button" className="cta cta-outline" onClick={() => scrollTo(highlights.length ? "ed-highlights" : "chapter-news")}>See the work ↓</button>
             </div>
           </div>
           <dl className="ed-stats reveal" style={{ "--d": "320ms" }}>
-            <div><dt>6 yrs</dt><dd>designing for the feed</dd></div>
+            <div><dt>{profile.editorialYearsLabel}</dt><dd>designing for the feed</dd></div>
             <div><dt>Daily</dt><dd>posts, on deadline</dd></div>
-            <div><dt>{COMBINED_FOLLOWERS}</dt><dd>followers across the two publishers</dd></div>
+            <div><dt>{audienceLabel}</dt><dd>followers across the two publishers</dd></div>
             <div><dt>+ 3D</dt><dd><TransitionLink to="/portfolio">and Web3D work too →</TransitionLink></dd></div>
           </dl>
         </section>
@@ -139,35 +158,43 @@ function Editorial() {
         {/* ---------- credibility: where the work runs ---------- */}
         <section className="ed-pubs ed-appear" aria-labelledby="ed-pubs-title">
           <div className="ed-pubs-head">
-            <span className="ed-num">Where my work runs</span>
-            <h2 id="ed-pubs-title">
-              My work goes out to {COMBINED_FOLLOWERS} followers, every day.
-              <span> Two pop-culture publishers, six years, and I'm still on both teams.</span>
-            </h2>
+            <span className="ed-pubs-eyebrow">Published work / 2020 — present</span>
+            <h2 id="ed-pubs-title">{profile.editorialPubsTitle}</h2>
+            <p className="ed-pubs-lede">{profile.editorialPubsNote}</p>
           </div>
           <div className="ed-pubs-grid">
-            {publishers.map((p) => (
-              <article className="ed-pub" key={p.org}>
+            {publishers.map((p, index) => {
+              const proof = editorialPosts.filter((post) => post.client === p.org && !post.nsfw && post.url).slice(0, 3);
+              return <article className="ed-pub" key={p.org}>
                 <header>
+                  <p className="ed-pub-tenure"><span>{String(index + 1).padStart(2, "0")} / Publisher credit</span><span>{p.years}</span></p>
                   <h3>{p.org}</h3>
-                  <p className="ed-pub-role">{p.role} <span>· {p.years}</span></p>
+                  <p className="ed-pub-role">{p.role}</p>
                 </header>
-                <p className="ed-pub-about">{p.about} {p.work}</p>
+                <p className="ed-pub-about">{p.work}</p>
+                <div className="ed-pub-proof">
+                  {proof.map((post, i) => <button key={post.slug} type="button" onClick={() => openPost(proof, i)} onPointerEnter={() => warmArtwork(post)} onFocus={() => warmArtwork(post)} aria-label={`Open published ${p.org} post: ${post.title}`}>
+                    <Thumb post={post} /><span>{post.title}</span>
+                  </button>)}
+                </div>
+                <div className="ed-pub-audience-label">Publisher audience <span>Facebook / Instagram</span></div>
                 <dl className="ed-pub-stats">
-                  {p.stats.map((st) => (
-                    <div key={st.label}>
-                      <dt>{st.value}</dt>
-                      <dd>
-                        {st.url ? <a href={st.url} target="_blank" rel="noreferrer">{st.label} ↗</a> : st.label}
-                      </dd>
-                    </div>
-                  ))}
+                  {p.stats.map((st) => <div key={st.label}><dt>{st.value}</dt><dd>{st.url ? <a href={st.url} target="_blank" rel="noreferrer">{st.label} ↗</a> : st.label}</dd></div>)}
                 </dl>
-              </article>
-            ))}
+              </article>;
+            })}
           </div>
-          <p className="ed-pubs-note">Follower counts from each publisher's public Facebook and Instagram pages, {AUDIENCE_CHECKED}.</p>
+          <p className="ed-pubs-note">Follower counts from each publisher's public Facebook and Instagram pages, {audienceChecked}.</p>
         </section>
+
+        {highlights.length > 0 && <section className="ed-chapter ed-appear" id="ed-highlights">
+          <header className="ed-chapter-head"><span className="ed-num">Selected</span><div><h2>Highlights</h2><p>Posts from the Animated Times feed.</p></div></header>
+          <div className="ed-archive-grid ed-highlights-grid">
+            {highlights.map((post, i) => <button key={post.slug} type="button" className="ed-tile ed-archive-tile" onClick={() => openPost(highlights, i)} onPointerEnter={() => warmArtwork(post)} onFocus={() => warmArtwork(post)}>
+              <Thumb post={post} /><span className="ed-archive-caption"><strong>{post.title}</strong><small>{post.client}{(post.frames?.length || 1) > 1 ? ` · ${(post.frames?.length || 1)} slides` : ""}</small></span>
+            </button>)}
+          </div>
+        </section>}
 
         {/* ---------- chapter index ---------- */}
         <nav className="ed-index" aria-label="Chapters">
@@ -185,7 +212,7 @@ function Editorial() {
             <span className="ed-num">01</span>
             <div>
               <h2>News &amp; theory covers</h2>
-              <p>{EDITORIAL_CATEGORIES[0].blurb}</p>
+              <p>{EDITORIAL_CATEGORIES.find((category) => category.id === "news")?.blurb}</p>
             </div>
           </header>
           <div className="ed-mosaic">
@@ -218,7 +245,7 @@ function Editorial() {
           <div className="ed-phone" aria-hidden="true">
             <div className="ed-phone-screen">
               <div className="ed-phone-track">
-                {[...editorialPosts, ...editorialPosts].map((post, i) => <Thumb key={`${post.slug}-f${i}`} post={post} eager />)}
+                {[...editorialPosts.slice(0, 12), ...editorialPosts.slice(0, 12)].map((post, i) => <Thumb key={`${post.slug}-f${i}`} post={post} eager />)}
               </div>
             </div>
           </div>
@@ -230,7 +257,7 @@ function Editorial() {
             <span className="ed-num">02</span>
             <div>
               <h2>Reviews &amp; campaigns</h2>
-              <p>{EDITORIAL_CATEGORIES[1].blurb}</p>
+              <p>{EDITORIAL_CATEGORIES.find((category) => category.id === "campaigns")?.blurb}</p>
             </div>
           </header>
           <div className="ed-duo">
@@ -249,7 +276,7 @@ function Editorial() {
             <span className="ed-num">03</span>
             <div>
               <h2>Timelines &amp; retrospectives</h2>
-              <p>{EDITORIAL_CATEGORIES[2].blurb} Swipe or scroll sideways.</p>
+              <p>{EDITORIAL_CATEGORIES.find((category) => category.id === "retrospectives")?.blurb} Swipe or scroll sideways.</p>
             </div>
           </header>
           <div className="ed-strip" tabIndex={0} aria-label="Retrospective posts, scroll horizontally">
@@ -268,7 +295,7 @@ function Editorial() {
             <span className="ed-num">04</span>
             <div>
               <h2>Data graphics</h2>
-              <p>{EDITORIAL_CATEGORIES[3].blurb}</p>
+              <p>{EDITORIAL_CATEGORIES.find((category) => category.id === "data")?.blurb}</p>
             </div>
           </header>
           {data.map((post, i) => (
@@ -278,11 +305,20 @@ function Editorial() {
               </button>
               <div className="ed-data-copy">
                 <h3>{post.title}</h3>
-                <p>{post.note} Ten rows, ten faces, one number each, readable before your thumb moves on.</p>
+                <p>{post.note}</p>
               </div>
             </div>
           ))}
         </section>
+
+        {extraCategories.map((category, ci) => { const social = byCategory(category.id); return social.length > 0 && <section className="ed-chapter ed-appear" id={`chapter-${category.id}`} key={category.id}>
+          <header className="ed-chapter-head"><span className="ed-num">{String(ci + 5).padStart(2, "0")}</span><div><h2>{category.label}</h2><p>{category.blurb}</p></div></header>
+          <div className="ed-archive-grid">
+            {social.map((post, i) => <button key={post.slug} type="button" className="ed-tile ed-archive-tile" onClick={() => openPost(social, i)} onPointerEnter={() => warmArtwork(post)} onFocus={() => warmArtwork(post)} aria-label={`${post.nsfw ? "View sensitive post" : "Open"} ${post.title}`}>
+              <Thumb post={post} /><span className="ed-archive-caption"><strong>{post.title}</strong><small>{post.client}{post.date ? ` · ${new Date(`${post.date}T12:00:00Z`).toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" })}` : ""}{(post.frames?.length || 1) > 1 ? ` · ${(post.frames?.length || 1)} slides` : ""}</small></span>
+            </button>)}
+          </div>
+        </section>; })}
 
         {/* ---------- the other half: 3D ---------- */}
         <section className="ed-other ed-appear" aria-labelledby="ed-other-title">
@@ -311,12 +347,12 @@ function Editorial() {
         {/* ---------- closing CTA ---------- */}
         <section className="ed-close ed-appear">
           <h2>Need someone for social, editorial or thumbnails?</h2>
-          <p>I work remotely, can start right away, and I'm used to newsroom deadlines and teams in the US.</p>
+          <p>{profile.editorialClosingNote}</p>
           <div className="ed-hero-actions">
-            <a className="cta" href={CONTRA_PROFILE} target="_blank" rel="noreferrer">Message me on Contra</a>
+            <a className="cta" href={profile.contraUrl || CONTRA_PROFILE} target="_blank" rel="noreferrer">Message me on Contra</a>
             <TransitionLink className="cta cta-outline" to="/about">More about me</TransitionLink>
           </div>
-          <p className="ed-credit">Posts I designed for FandomWire. Open any piece to see the original.</p>
+          <p className="ed-credit">Posts I designed for FandomWire and Animated Times. Open any piece to see the original.</p>
         </section>
       </div>
 
@@ -331,23 +367,24 @@ function Editorial() {
         }}
         aria-label={open ? open.title : "Post preview"}
       >
-        {open && (
+        {open && needsConsent ? <ArtworkWarning item={open} titleId="ed-warning-title" onClose={close} onReveal={() => setLightbox((lb) => ({ ...lb, consentSlug: open.slug }))} /> : open && (
           <div className="editorial-lightbox-inner">
             <div className="editorial-lightbox-stage">
-              <img src={open.full} alt={`${open.title}, social post designed for ${open.client}`} width="1080" height="1350" />
+              <SketchLightboxImage key={frame.full} item={frame} />
             </div>
             <div className="editorial-lightbox-copy">
-              <span>{label(open.category)} · {open.client}</span>
+              <span>{label(open.category)} · {open.client}{frameCount > 1 ? ` · Post ${lightbox.index + 1} / ${lightbox.list.length}` : ""}</span>
               <h2>{open.title}</h2>
-              <p>{open.note}</p>
-              <a href={open.url} target="_blank" rel="noreferrer">
-                View original on {open.platform} <span aria-hidden="true">↗</span>
-              </a>
+              <p>{frame.note || open.note}</p>
+
+              {open.url && <a href={open.url} target="_blank" rel="noreferrer">
+                View original{open.platform ? ` on ${open.platform}` : ""} <span aria-hidden="true">↗</span>
+              </a>}
             </div>
             <div className="editorial-lightbox-nav">
-                <button type="button" onClick={() => step(-1)} aria-label="Previous piece">←</button>
-                <span>{lightbox.index + 1} / {lightbox.list.length}</span>
-                <button type="button" onClick={() => step(1)} aria-label="Next piece">→</button>
+                <button type="button" onClick={() => step(-1)} aria-label="Previous image">←</button>
+                <span>{frameCount > 1 ? `Slide ${frameIndex + 1} / ${frameCount}` : `${lightbox.index + 1} / ${lightbox.list.length}`}</span>
+                <button type="button" onClick={() => step(1)} aria-label="Next image">→</button>
             </div>
             <button type="button" className="editorial-lightbox-close" onClick={close} aria-label="Close">×</button>
           </div>

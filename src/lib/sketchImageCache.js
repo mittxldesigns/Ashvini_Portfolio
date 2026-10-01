@@ -1,4 +1,5 @@
 // Keep decoded artwork ready without loading the whole sketchbook at full size.
+import { mayPreloadArtwork } from "./artworkConsent.js";
 export function createImageCache({ makeImage = () => new Image(), maxDecoded = 5, maxConcurrent = 3 } = {}) {
   if (!Number.isInteger(maxDecoded) || maxDecoded < 0 || !Number.isInteger(maxConcurrent) || maxConcurrent < 1) {
     throw new RangeError("Image cache limits must be whole numbers; concurrency must be at least one.");
@@ -112,6 +113,7 @@ export function warmSketchNeighbors(list, index) {
   const current = ((index % list.length) + list.length) % list.length;
   const neighbors = new Set([(current - 1 + list.length) % list.length, (current + 1) % list.length]);
   for (const position of neighbors) {
+    if (!mayPreloadArtwork(list[position])) continue;
     warm(fullSketchImages, list[position]?.full, "low");
     warm(previewSketchImages, list[position]?.thumbWebp, "high");
   }
@@ -120,5 +122,5 @@ export function warmSketchNeighbors(list, index) {
 export function warmSketchPreviews(list) {
   const connection = globalThis.navigator?.connection;
   if (connection?.saveData || /^(slow-)?2g$/.test(connection?.effectiveType || "")) return;
-  for (const item of list || []) warm(previewSketchImages, item?.thumbWebp, "low");
+  for (const item of list || []) if (mayPreloadArtwork(item)) warm(previewSketchImages, item?.thumbWebp, "low");
 }

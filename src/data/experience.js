@@ -20,7 +20,7 @@ export const publishers = [
     role: "Graphic Designer",
     years: "2020 – present",
     about: "Entertainment news for Marvel, DC, film and TV fans.",
-    work: "I design the covers, thumbnails and social posts that go out with its stories, including everything on this page.",
+    work: "I design the covers, thumbnails and social posts that go out with its stories.",
     stats: [
       { value: "1.48M", label: "Facebook followers", url: "https://www.facebook.com/FandomWire" },
       { value: "74K", label: "Instagram followers", url: "https://www.instagram.com/fandomwire/" },

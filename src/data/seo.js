@@ -1,269 +1,211 @@
 import { CONTRA_PROFILE, pieces } from "./projectContent.js";
 import { EDITORIAL_CATEGORIES, posts as editorialPosts } from "./editorialContent.js";
-import { faq } from "./faq.js";
 import { SKETCH_CHAPTERS, sketches as sketchList } from "./sketchesContent.js";
+import { getSiteProfile } from "./siteProfile.js";
 
 export const SITE_URL = "https://bettercallashvini.com";
 export const PERSON_NAME = "Ashvini Kumar";
 
-const homeDescription =
-  "Interactive 3D scenes, product models, and motion for the web by Ashvini Kumar, plus six years of social and editorial design for pop-culture publishers.";
+const sensitive = (item) => item?.nsfw === true || item?.frames?.some((frame) => frame.nsfw === true);
+const list = (value) => Array.isArray(value) ? value : [];
+const text = (value) => typeof value === "string" ? value : "";
 
-export function getSeoForPath(pathname) {
+function snapshot(content = {}) {
+  return {
+    profile: content.profile ?? getSiteProfile(),
+    projects: content.projects ?? pieces,
+    editorial: content.editorial ?? editorialPosts,
+    sketches: content.sketches ?? sketchList,
+    siteUrl: (content.siteUrl || SITE_URL).replace(/\/+$/, ""),
+  };
+}
+
+export function absoluteSeoUrl(value, siteUrl = SITE_URL) {
+  if (typeof value !== "string" || !value) return "";
+  try {
+    const url = new URL(value, `${siteUrl}/`);
+    return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password ? url.href : "";
+  } catch { return ""; }
+}
+
+function publicationDate(item) {
+  const value = Object.hasOwn(item, "date") ? item.date : item.dateISO;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return {};
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value ? { datePublished: value } : {};
+}
+
+export function getSeoForPath(pathname, content) {
+  const context = snapshot(content);
+  const { profile, projects, editorial, siteUrl } = context;
+  const name = text(profile.name) || PERSON_NAME;
   const path = pathname === "/" ? "/" : pathname.replace(/\/+$/, "");
   const base = {
+    context,
     path,
-    canonical: `${SITE_URL}${path}`,
-    image: `${SITE_URL}/social-preview.webp`,
+    siteName: name,
+    canonical: `${siteUrl}${path}`,
+    image: `${siteUrl}/social-preview.webp`,
     robots: "index,follow",
+    sensitive: false,
   };
-
-  if (path === "/") {
-    return {
-      ...base,
+  const clients = [...new Set(editorial.map((post) => post.client).filter(Boolean))];
+  const categories = list(profile.editorialCategories ?? EDITORIAL_CATEGORIES);
+  const chapters = list(profile.sketchChapters ?? SKETCH_CHAPTERS);
+  const definitions = {
+    "/": {
       kind: "home",
-      title: `${PERSON_NAME} — 3D Artist & Social Editorial Designer`,
-      description: homeDescription,
-    };
-  }
-
-  if (path === "/portfolio") {
-    return {
-      ...base,
+      title: `${name} — ${text(profile.tagline) || "3D Artist & Social Editorial Designer"}`,
+      description: text(profile.homeDescription),
+    },
+    "/portfolio": {
       kind: "portfolio",
-      title: `Selected 3D Work — ${PERSON_NAME}`,
-      description:
-        "Explore product models, interactive scenes, and motion studies by Ashvini Kumar.",
-    };
-  }
-
-  if (path === "/about") {
-    return {
-      ...base,
+      title: `Selected 3D Work — ${name}`,
+      description: text(profile.homeDescription) || `Product models, interactive scenes, and motion studies by ${name}.`,
+    },
+    "/about": {
       kind: "about",
-      title: `About ${PERSON_NAME} — 3D Artist & Editorial Designer`,
-      description:
-        "Ashvini Kumar is a 3D artist and social & editorial designer: Senior Designer at Animated Times, Graphic Designer at FandomWire, and a top 1% Spline expert on Contra.",
-    };
-  }
-
-  if (path === "/editorial") {
-    return {
-      ...base,
+      title: `About ${name} — ${text(profile.tagline) || "3D Artist & Editorial Designer"}`,
+      description: text(profile.aboutBio) || text(profile.homeDescription),
+    },
+    "/editorial": {
       kind: "editorial",
-      image: `${SITE_URL}/og-editorial.jpg`,
-      title: `Social & Editorial Design — ${PERSON_NAME}`,
-      description:
-        "Ashvini Kumar's social and editorial design: six years of covers, thumbnails and posts for pop-culture publishers FandomWire and Animated Times. His 3D and Web3D work is on the same site.",
-    };
-  }
-
-  if (path === "/sketches") {
+      image: `${siteUrl}/og-editorial.jpg`,
+      title: `Social & Editorial Design — ${name}`,
+      description: text(profile.editorialIntro) || `${name}'s social and editorial work${clients.length ? ` for ${clients.join(" and ")}` : ""}. ${categories.map((category) => category.label).filter(Boolean).join(", ")}.`,
+    },
+    "/sketches": {
+      kind: "sketches",
+      title: `Sketchbook: Digital Paintings & Pencil Art — ${name}`,
+      description: text(profile.sketchesIntro) || `${name}'s sketchbook: ${chapters.map((chapter) => chapter.label).filter(Boolean).join(", ")}.`,
+    },
+  };
+  const definition = definitions[path];
+  if (definition) {
+    const overrides = profile.seo?.[definition.kind];
     return {
       ...base,
-      kind: "sketches",
-      title: `Sketchbook: Digital Paintings & Pencil Art — ${PERSON_NAME}`,
-      description:
-        "Ashvini Kumar's artist side: film poster concepts, character paintings and scene studies in Photoshop, plus graphite fan art from 2017 and paid ink cover commissions from 2020.",
+      ...definition,
+      ...(text(overrides?.title).trim() ? { title: overrides.title } : {}),
+      ...(text(overrides?.description).trim() ? { description: overrides.description } : {}),
     };
   }
 
-  const projectMatch = /^\/portfolio\/([1-9]\d*)$/.exec(path);
-  const project = projectMatch && pieces.find((piece) => piece.id === Number(projectMatch[1]));
+  const match = /^\/portfolio\/([1-9]\d*)$/.exec(path);
+  const project = match && projects.find((piece) => String(piece.id) === match[1]);
   if (project) {
+    const needsConsent = Boolean(sensitive(project));
+    const mediaImage = project.poster || (project.mediaType === "video" ? project.thumbWebp : project.full || project.heroWebp);
+    const image = !needsConsent && absoluteSeoUrl(mediaImage, siteUrl);
     return {
       ...base,
       kind: "project",
       project,
-      title: `${project.title} — ${PERSON_NAME}`,
-      description: project.description,
+      sensitive: needsConsent,
+      title: `${project.title} — ${name}`,
+      description: text(project.description) || text(project.note),
+      ...(image ? { image } : {}),
+      ...(needsConsent ? { robots: "noindex,follow" } : {}),
     };
   }
 
   return {
     ...base,
     kind: "notFound",
-    title: `Page not found — ${PERSON_NAME}`,
-    description: "This page is not part of Ashvini Kumar's portfolio.",
+    title: `Page not found — ${name}`,
+    description: `This page is not part of ${name}'s portfolio.`,
     robots: "noindex,nofollow",
   };
 }
 
-export function getStructuredData(page, image = page.image) {
+export function getStructuredData(page, image = page.image, content) {
+  if (page.kind === "notFound" || (page.kind === "project" && page.sensitive)) return null;
+  const { profile, projects, editorial, sketches, siteUrl } = snapshot(content ?? page.context);
+  const name = text(profile.name) || PERSON_NAME;
+  const experience = list(profile.experience);
+  const publishers = list(profile.publishers);
+  const categories = list(profile.editorialCategories ?? EDITORIAL_CATEGORIES);
+  const chapters = list(profile.sketchChapters ?? SKETCH_CHAPTERS);
   const person = {
     "@type": "Person",
-    "@id": `${SITE_URL}/#person`,
-    name: PERSON_NAME,
-    url: SITE_URL,
-    image: `${SITE_URL}/avatar.webp`,
-    alternateName: ["Ashwani Kumar", "Ashvini"],
-    jobTitle: ["3D Artist", "Social & Editorial Designer", "Video Editor"],
-    description:
-      "3D artist and social & editorial designer from Lucknow, India. Senior Designer & Video Editor at Animated Times and Graphic Designer at FandomWire since 2020; freelance Spline and Web3D designer.",
-    homeLocation: { "@type": "Place", name: "Lucknow, Uttar Pradesh, India" },
-    worksFor: [
-      { "@type": "Organization", name: "Animated Times", url: "https://www.animatedtimes.com" },
-      { "@type": "Organization", name: "FandomWire", url: "https://fandomwire.com" },
-    ],
-    alumniOf: { "@type": "EducationalOrganization", name: "MAAC (Maya Academy of Advanced Cinematics)" },
-    knowsAbout: [
-      "3D modeling", "Spline", "Blender", "Autodesk 3ds Max", "Web3D", "Product visualization",
-      "Social media design", "Editorial design", "Thumbnail design", "Video editing",
-      "Adobe Photoshop", "Adobe Illustrator", "Adobe Premiere Pro", "Adobe After Effects",
-    ],
-    sameAs: [
-      "https://contra.com/ashvini_kmr",
-      "https://instagram.com/ashvini_kmr",
-      "https://www.linkedin.com/in/ashwani-kumar-b899b5188",
-      "https://community.spline.design/bettercallashvini",
-    ],
+    "@id": `${siteUrl}/#person`,
+    name,
+    url: siteUrl,
+    ...(absoluteSeoUrl(profile.avatarUrl, siteUrl) ? { image: absoluteSeoUrl(profile.avatarUrl, siteUrl) } : {}),
+    ...(name === PERSON_NAME ? { alternateName: ["Ashwani Kumar", "Ashvini"] } : {}),
+    ...(profile.tagline ? { jobTitle: profile.tagline } : {}),
+    ...(profile.aboutBio || profile.homeDescription ? { description: profile.aboutBio || profile.homeDescription } : {}),
+    ...(profile.location ? { homeLocation: { "@type": "Place", name: profile.location } } : {}),
+    worksFor: publishers.filter((publisher) => publisher.org && /present|current/i.test(publisher.years || "")).map((publisher) => ({ "@type": "Organization", name: publisher.org })),
+    alumniOf: experience.filter((entry) => entry.side === "edu" && entry.org).map((entry) => ({ "@type": "EducationalOrganization", name: entry.org })),
+    knowsAbout: list(profile.skills),
+    sameAs: [profile.contraUrl, profile.instagramUrl, profile.linkedinUrl, profile.splineUrl]
+      .map((url) => absoluteSeoUrl(url, siteUrl)).filter(Boolean),
   };
+  const graph = (entities) => ({ "@context": "https://schema.org", "@graph": [person, ...entities] });
 
-  if (page.kind === "notFound") return null;
-  if (page.kind === "home") {
-    return {
-      "@context": "https://schema.org",
-      "@graph": [
-        person,
-        {
-          "@type": "WebSite",
-          name: `${PERSON_NAME} Portfolio`,
-          url: SITE_URL,
-          creator: { "@id": person["@id"] },
-        },
-      ],
-    };
-  }
+  if (page.kind === "home") return graph([{
+    "@type": "WebSite", name: `${name} Portfolio`, url: siteUrl, creator: { "@id": person["@id"] },
+  }]);
 
-  if (page.kind === "portfolio") {
-    return {
-      "@context": "https://schema.org",
-      "@graph": [
-        person,
-        {
-          "@type": "CollectionPage",
-          name: "Selected 3D Work",
-          url: page.canonical,
-          creator: { "@id": person["@id"] },
-          mainEntity: {
-            "@type": "ItemList",
-            itemListElement: pieces.map((piece, index) => ({
-              "@type": "ListItem",
-              position: index + 1,
-              name: piece.title,
-              url: `${SITE_URL}/portfolio/${piece.id}`,
-            })),
-          },
-        },
-      ],
-    };
-  }
+  if (page.kind === "about") return graph([
+    { "@type": "ProfilePage", name: `About ${name}`, url: page.canonical, mainEntity: { "@id": person["@id"] } },
+    ...(list(profile.faq).length ? [{
+      "@type": "FAQPage",
+      mainEntity: profile.faq.map((item) => ({
+        "@type": "Question", name: item.q, acceptedAnswer: { "@type": "Answer", text: item.a },
+      })),
+    }] : []),
+  ]);
 
-  if (page.kind === "sketches") {
-    return {
-      "@context": "https://schema.org",
-      "@graph": [
-        person,
-        {
-          "@type": "CollectionPage",
-          name: "Sketchbook",
-          description: page.description,
-          url: page.canonical,
-          creator: { "@id": person["@id"] },
-          about: SKETCH_CHAPTERS.map((c) => c.label),
-          mainEntity: {
-            "@type": "ItemList",
-            itemListElement: sketchList.map((s, index) => ({
-              "@type": "ListItem",
-              position: index + 1,
-              item: {
-                "@type": "VisualArtwork",
-                name: s.title,
-                artMedium: s.medium,
-                dateCreated: String(s.year),
-                description: s.note,
-                url: s.url,
-                creator: { "@id": person["@id"] },
-              },
-            })),
-          },
-        },
-      ],
-    };
-  }
-
-  if (page.kind === "editorial") {
-    return {
-      "@context": "https://schema.org",
-      "@graph": [
-        person,
-        {
-          "@type": "CollectionPage",
-          name: "Social & Editorial Design",
-          description: page.description,
-          url: page.canonical,
-          creator: { "@id": person["@id"] },
-          about: EDITORIAL_CATEGORIES.map((c) => c.label),
-          mainEntity: {
-            "@type": "ItemList",
-            itemListElement: editorialPosts.map((post, index) => ({
-              "@type": "ListItem",
-              position: index + 1,
-              item: {
-                "@type": "CreativeWork",
-                name: post.title,
-                description: post.note,
-                genre: EDITORIAL_CATEGORIES.find((c) => c.id === post.category)?.label,
-                url: post.url,
-                creator: { "@id": person["@id"] },
-                publisher: { "@type": "Organization", name: "FandomWire" },
-              },
-            })),
-          },
-        },
-      ],
-    };
-  }
-
-  if (page.kind === "about") {
-    return {
-      "@context": "https://schema.org",
-      "@graph": [
-        person,
-        {
-          "@type": "ProfilePage",
-          name: `About ${PERSON_NAME}`,
-          url: page.canonical,
-          mainEntity: { "@id": person["@id"] },
-        },
-        {
-          "@type": "FAQPage",
-          mainEntity: faq.map((item) => ({
-            "@type": "Question",
-            name: item.q,
-            acceptedAnswer: { "@type": "Answer", text: item.a },
-          })),
-        },
-      ],
-    };
-  }
-
-  return {
-    "@context": "https://schema.org",
-    "@graph": [
-      person,
-      {
-        "@type": "CreativeWork",
-        name: page.project.title,
-        description: page.project.description,
-        url: page.canonical,
-        image,
-        creator: { "@id": person["@id"] },
-        isPartOf: `${SITE_URL}/portfolio`,
-        ...(page.project.contraUrl && page.project.contraUrl !== CONTRA_PROFILE
-          ? { sameAs: page.project.contraUrl }
-          : {}),
+  if (["portfolio", "editorial", "sketches"].includes(page.kind)) {
+    const items = page.kind === "portfolio" ? projects : page.kind === "editorial" ? editorial : sketches;
+    return graph([{
+      "@type": "CollectionPage",
+      name: page.kind === "portfolio" ? "Selected 3D Work" : page.kind === "editorial" ? "Social & Editorial Design" : "Sketchbook",
+      description: page.description,
+      url: page.canonical,
+      creator: { "@id": person["@id"] },
+      ...(page.kind === "portfolio" ? {} : { about: (page.kind === "editorial" ? categories : chapters).map((category) => ({ "@type": "Thing", name: category.label })) }),
+      mainEntity: {
+        "@type": "ItemList",
+        itemListElement: items.map((item, index) => {
+          if (page.kind === "portfolio") return {
+            "@type": "ListItem", position: index + 1, name: item.title, url: `${siteUrl}/portfolio/${item.id}`,
+          };
+          const source = !sensitive(item) && absoluteSeoUrl(item.url, siteUrl);
+          return {
+            "@type": "ListItem",
+            position: index + 1,
+            item: {
+              "@type": page.kind === "sketches" && item.mediaType !== "video" ? "VisualArtwork" : "CreativeWork",
+              ...(item.slug ? { "@id": `${page.canonical}#${encodeURIComponent(item.slug)}` } : {}),
+              name: item.title,
+              description: text(item.note) || text(item.description),
+              url: source || page.canonical,
+              creator: { "@id": person["@id"] },
+              ...publicationDate(item),
+              ...(page.kind === "sketches" && item.medium ? { artMedium: item.medium } : {}),
+              ...(page.kind === "editorial" ? {
+                ...(categories.find((category) => category.id === item.category)?.label ? { genre: categories.find((category) => category.id === item.category).label } : {}),
+                ...(item.client ? { publisher: { "@type": "Organization", name: item.client } } : {}),
+              } : {}),
+            },
+          };
+        }),
       },
-    ],
-  };
+    }]);
+  }
+
+  return graph([{
+    "@type": "CreativeWork",
+    name: page.project.title,
+    description: text(page.project.description) || text(page.project.note),
+    url: page.canonical,
+    ...(absoluteSeoUrl(image, siteUrl) ? { image: absoluteSeoUrl(image, siteUrl) } : {}),
+    creator: { "@id": person["@id"] },
+    isPartOf: `${siteUrl}/portfolio`,
+    ...(page.project.contraUrl && page.project.contraUrl !== (profile.contraUrl || CONTRA_PROFILE)
+      ? { sameAs: absoluteSeoUrl(page.project.contraUrl, siteUrl) } : {}),
+  }]);
 }

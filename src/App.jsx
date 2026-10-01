@@ -5,6 +5,8 @@ import InfiniteDragGrid from "./componenets/InfiniteDragGrid.jsx";
 import Home from "./componenets/Home.jsx";
 import HeaderNav from "./componenets/HeaderNav.jsx";
 import About from "./componenets/About.jsx";
+import PortfolioAdmin from "./componenets/PortfolioAdmin.jsx";
+import { bundledPortfolioContent } from "./lib/portfolioContent.js";
 import Editorial from "./componenets/Editorial.jsx";
 import Sketches from "./componenets/Sketches.jsx";
 import ProjectDetail from "./componenets/ProjectDetail.jsx";
@@ -30,7 +32,7 @@ function RoutedContent() {
   const location = useLocation();
   const pageRef = useRef(null);
   const [previewFinishedKey, setPreviewFinishedKey] = useState(null);
-  const preview = isSketchLoaderPreview(location.search);
+  const preview = !location.pathname.startsWith("/admin") && isSketchLoaderPreview(location.search);
   const showingPreview = preview && previewFinishedKey !== location.key;
   const startPreview = useCallback(() => setPreviewFinishedKey(null), []);
   const finishPreview = useCallback(() => setPreviewFinishedKey(location.key), [location.key]);
@@ -52,6 +54,7 @@ function RoutedContent() {
         />
         <Route path="/portfolio/:id" element={<ProjectDetail />} />
         <Route path="/about" element={<About />} />
+        <Route path="/admin/*" element={<PortfolioAdmin initialContent={bundledPortfolioContent()} />} />
         <Route path="/editorial" element={<Editorial />} />
         <Route path="/sketches" element={<Sketches key={preview ? "preview" : "normal"} loaderPreview={preview} />} />
       </Routes>

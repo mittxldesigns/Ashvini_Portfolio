@@ -243,13 +243,13 @@ export default function ProjectStrip({ activeId, onSelect }) {
               data-copy={copy}
               data-index={index}
               data-id={p.id}
-              className={active ? "strip-item is-active" : "strip-item"}
+              className={`${active ? "strip-item is-active" : "strip-item"}${p.nsfw ? " is-sensitive" : ""}`}
               aria-current={active && copy === 1 ? "page" : undefined}
               aria-label={copy === 1 ? p.title : undefined}
               aria-hidden={copy === 1 ? undefined : true}
               onPointerEnter={(e) => {
                 preloadHero(p);
-                if (e.pointerType === "touch") return;
+                if (e.pointerType === "touch" || p.nsfw) return;
                 previewAnchor.current = e.currentTarget;
                 setPreview(p);
               }}
@@ -260,6 +260,7 @@ export default function ProjectStrip({ activeId, onSelect }) {
               }}
               onFocus={(e) => {
                 preloadHero(p);
+                if (p.nsfw) return;
                 previewAnchor.current = e.currentTarget;
                 setPreview(p);
               }}

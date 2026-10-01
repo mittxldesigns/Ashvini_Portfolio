@@ -8,14 +8,17 @@ import {
 } from "../lib/gridLayout.js";
 import { gridState } from "../lib/gridState.js";
 import { tagSharedElement } from "../lib/viewTransition.js";
+import { getSiteProfile } from "../data/siteProfile.js";
 
 const featuredKey = "ashvini-featured-project";
 let chosenProject = null;
 
 function getFeaturedProject() {
   if (chosenProject) return chosenProject;
+  const selected = projects.find((project) => project.id === getSiteProfile().homeHeroProjectId);
+  if (selected && !selected.nsfw) return (chosenProject = selected);
   const pool = projects.filter((project) =>
-    project.slug !== "dna-helix" && project.slug !== "chrome-ak47"
+    !project.nsfw && project.slug !== "dna-helix" && project.slug !== "chrome-ak47"
   );
   let previous = null;
   try {
@@ -24,7 +27,7 @@ function getFeaturedProject() {
     // Storage may be unavailable; the artwork can still rotate.
   }
   const choices = pool.filter((project) => project.id !== previous);
-  chosenProject = choices[Math.floor(Math.random() * choices.length)] ?? pool[0];
+  chosenProject = choices[Math.floor(Math.random() * choices.length)] ?? pool[0] ?? projects.find((project) => !project.nsfw) ?? projects[0];
   try {
     sessionStorage.setItem(featuredKey, String(chosenProject.id));
   } catch {
@@ -34,6 +37,7 @@ function getFeaturedProject() {
 }
 
 function Home() {
+  const profile = getSiteProfile();
   const [featured] = useState(getFeaturedProject);
   const [imageReady, setImageReady] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
@@ -74,7 +78,7 @@ function Home() {
   return (
     <>
       <TransitionLink
-        className="home-art-link"
+        className={`home-art-link${featured.nsfw ? " is-sensitive" : ""}`}
         to="/portfolio"
         kind="home-to-grid"
         onBeforeNavigate={enterGrid}
@@ -82,11 +86,11 @@ function Home() {
         aria-label={`Explore ${featured.title} in the portfolio`}
       >
         <picture>
-          {!imageFailed && <source srcSet={featured.heroAvif} type="image/avif" />}
+          {!imageFailed && !featured.nsfw && <source srcSet={featured.heroAvif} type="image/avif" />}
           <img
             ref={imageRef}
             className={imageReady ? "home-art is-ready" : "home-art"}
-            src={imageFailed ? featured.thumbWebp : featured.heroWebp}
+            src={imageFailed || featured.nsfw ? featured.thumbWebp : featured.heroWebp}
             alt={featured.title}
             loading="eager"
             decoding="async"
@@ -102,8 +106,8 @@ function Home() {
       </TransitionLink>
       <div className="home-container">
         <div className="home-content">
-          <h1>Ashvini Kumar</h1>
-          <p>3D artist · social &amp; editorial designer</p>
+          <h1>{profile.name}</h1>
+          <p>{profile.tagline}</p>
 
           <div className="home-track">
             <TransitionLink
@@ -123,9 +127,9 @@ function Home() {
             </TransitionLink>
           </div>
           <p className="home-cred">
-            Senior Designer at Animated Times · Designer at FandomWire · Top 1% Spline expert on Contra
+            {profile.homeCred}
           </p>
-          <a className="home-contact" href={CONTRA_PROFILE} target="_blank" rel="noreferrer">
+          <a className="home-contact" href={profile.contraUrl || CONTRA_PROFILE} target="_blank" rel="noreferrer">
             Start a project <span aria-hidden="true">↗</span>
           </a>
           <nav className="home-browse" aria-label="About">
@@ -135,8 +139,7 @@ function Home() {
       </div>
 
       <p className="para position-1">
-        I make interactive 3D scenes and product visuals for the web, from
-        modeling through motion.
+        {profile.homeDescription}
       </p>
     </>
   );

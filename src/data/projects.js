@@ -43,40 +43,7 @@ export const projects = pieces.map((p) => ({
 }));
 
 // Contra work without a matching render in the grid.
-export const caseStudies = [
-  {
-    title: "T.M-4 — Teenage Engineering Concept in Spline",
-    url: "https://contra.com/community/EuN2LzOQ-back-with-another-spline-project-from",
-  },
-  {
-    title: "Best Spline Projects of 2024–2025",
-    url: "https://contra.com/p/k3OMMAmq-best-spline-projects-of-2024-2025",
-  },
-  {
-    title: "Crafting Realities: 3D Modeling & Rendering Showcase",
-    url: "https://contra.com/p/F6BLmXlE-crafting-realities-a-3-d-modeling-and-rendering-showcase",
-  },
-  {
-    title: "Interactive 3D Bottle Models for Athletic Power",
-    url: "https://contra.com/p/BEU2orqq-interactive-3-d-bottle-models-for-athletic-power",
-  },
-  {
-    title: "AEOS Labs: Where Spline meets Framer",
-    url: "https://contra.com/p/MvLXOYr7-aeos-labs-where-spline-meets-framer",
-  },
-  {
-    title: "Interactive Boxes for a Website Hero Section",
-    url: "https://contra.com/p/oXZqkP6o-interactive-boxes-for-website-hero-section",
-  },
-  {
-    title: "AI Concept Page Hero Section",
-    url: "https://contra.com/p/rBYeR2Xb-ai-concept-page-hero-section-with-spline3-d",
-  },
-  {
-    title: "Interactive Hero Section for Zamn Studios",
-    url: "https://contra.com/p/ogooAZkM-interactive-hero-section-for-zamn-studios-with-spline3-d",
-  },
-];
+export { caseStudies } from "./caseStudyContent.js";
 
 export function getProjectById(id) {
   return projects.find((p) => p.id === Number(id));
@@ -97,7 +64,7 @@ const avifCheck = new Promise((resolve) => {
 
 // Only meaningful once an item has loaded (loading waits for the AVIF check).
 export function thumbSrc(project) {
-  return avifSupported ? project.thumbAvif : project.thumbWebp;
+  return avifSupported && project.thumbAvif ? project.thumbAvif : project.thumbWebp;
 }
 
 const loadedIds = new Set();
@@ -160,14 +127,14 @@ export function preloadThumbs(priorityIds = []) {
 // --- Hero images ---------------------------------------------------------
 
 export function heroSrc(project) {
-  return avifSupported === false ? project.heroWebp : project.heroAvif;
+  return avifSupported !== false && project.heroAvif ? project.heroAvif : project.heroWebp;
 }
 
 const heroRequested = new Set();
 
 // Warm the hi-res hero (e.g. on hover) so a switch shows it immediately.
 export function preloadHero(project) {
-  if (!project || heroRequested.has(project.id)) return;
+  if (!project || project.nsfw || project.mediaType === "video" || heroRequested.has(project.id)) return;
   heroRequested.add(project.id);
   avifCheck.then(() => {
     const img = new Image();
