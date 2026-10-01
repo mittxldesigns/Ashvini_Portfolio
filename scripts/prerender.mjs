@@ -2,6 +2,9 @@ import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { pieces, CONTRA_PROFILE } from "../src/data/projectContent.js";
+import { EDITORIAL_CATEGORIES, posts as editorialPosts } from "../src/data/editorialContent.js";
+import { publishers, timeline, COMBINED_FOLLOWERS, AUDIENCE_CHECKED } from "../src/data/experience.js";
+import { faq } from "../src/data/faq.js";
 import {
   getSeoForPath,
   getStructuredData,
@@ -88,11 +91,19 @@ function projectShell(page, index, image) {
 }
 
 function aboutShell() {
-  return `<main class="seo-shell"><a class="seo-home-link" href="/portfolio">← Selected work</a><h1>About ${escapeHtml(PERSON_NAME)}</h1><p>A 3D artist and Spline designer creating product visuals and interactive scenes for the web.</p><p>Explore selected work, or send a project inquiry through Contra.</p><a class="seo-contact" href="${escapeHtml(CONTRA_PROFILE)}">Message Ashvini about a project ↗</a></main>`;
+  const exp = timeline.map((t) => `<li>${escapeHtml(t.years)}: ${escapeHtml(t.role)}, ${escapeHtml(t.org)}${t.note ? `. ${escapeHtml(t.note)}` : ""}</li>`).join("");
+  const qa = faq.map((item) => `<h3>${escapeHtml(item.q)}</h3><p>${escapeHtml(item.a)}</p>`).join("");
+  return `<main class="seo-shell"><a class="seo-home-link" href="/portfolio">← Selected work</a><h1>About ${escapeHtml(PERSON_NAME)}</h1><p>A 3D artist and social &amp; editorial designer from Lucknow, India: Senior Designer &amp; Video Editor at Animated Times, Graphic Designer at FandomWire, and a top 1% Spline expert on Contra.</p><h2>Experience</h2><ul>${exp}</ul><h2>Quick answers</h2>${qa}<nav><a href="/portfolio">3D &amp; Web3D work</a> · <a href="/editorial">Social &amp; editorial work</a></nav><a class="seo-contact" href="${escapeHtml(CONTRA_PROFILE)}">Message Ashvini about a project ↗</a></main>`;
 }
 
 function editorialShell() {
-  return `<main class="seo-shell"><a class="seo-home-link" href="/">${escapeHtml(PERSON_NAME)}</a><h1>Social &amp; editorial design</h1><p>Social posts, covers and thumbnails designed for pop-culture publishers FandomWire and Animated Times: news and theory covers, reviews and campaigns, timelines and retrospectives, and data graphics.</p><a class="seo-contact" href="/portfolio">See the 3D &amp; Web3D work →</a></main>`;
+  const pubs = publishers.map((p) => `<li><strong>${escapeHtml(p.org)}</strong>: ${escapeHtml(p.role)}, ${escapeHtml(p.years)}. ${escapeHtml(p.about)} ${p.stats.map((st) => `${escapeHtml(st.value)} ${escapeHtml(st.label)}`).join(", ")}.</li>`).join("");
+  const chapters = EDITORIAL_CATEGORIES.map((c) => {
+    const items = editorialPosts.filter((post) => post.category === c.id)
+      .map((post) => `<li><a href="${escapeHtml(post.url)}">${escapeHtml(post.title)}</a>: ${escapeHtml(post.note)}</li>`).join("");
+    return `<h2>${escapeHtml(c.label)}</h2><p>${escapeHtml(c.blurb)}</p><ul>${items}</ul>`;
+  }).join("");
+  return `<main class="seo-shell"><a class="seo-home-link" href="/">${escapeHtml(PERSON_NAME)}</a><h1>Social &amp; editorial design by ${escapeHtml(PERSON_NAME)}</h1><p>For six years Ashvini has designed the covers, thumbnails and social posts that pop-culture publishers Animated Times and FandomWire publish every day. His work reaches ${escapeHtml(COMBINED_FOLLOWERS)} followers across the two publishers' pages (public counts, ${escapeHtml(AUDIENCE_CHECKED)}).</p><h2>Where the work runs</h2><ul>${pubs}</ul>${chapters}<a class="seo-contact" href="/portfolio">See the 3D &amp; Web3D work →</a></main>`;
 }
 
 function notFoundShell() {
@@ -103,7 +114,7 @@ async function writePage(path, destination, shell) {
   const page = getSeoForPath(path);
   const image = page.kind === "project"
     ? `${SITE_URL}${builtImage(page.project.slug)}`
-    : `${SITE_URL}/social-preview.webp`;
+    : page.image;
   let html = replaceSection(template, "<!-- SEO_HEAD_START -->", "<!-- SEO_HEAD_END -->", headFor(page, image));
   html = replaceSection(html, homeShellStart, homeShellEnd, shell);
   await mkdir(dirname(join(output, destination)), { recursive: true });
@@ -122,6 +133,7 @@ for (const [index, piece] of pieces.entries()) {
 await writePage("/404", "404.html", notFoundShell());
 
 const sitemapPaths = ["/", "/portfolio", "/about", "/editorial", ...pieces.map((piece) => `/portfolio/${piece.id}`)];
-const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapPaths.map((path) => `  <url><loc>${SITE_URL}${path}</loc></url>`).join("\n")}\n</urlset>\n`;
+const lastmod = new Date().toISOString().slice(0, 10);
+const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapPaths.map((path) => `  <url><loc>${SITE_URL}${path}</loc><lastmod>${lastmod}</lastmod></url>`).join("\n")}\n</urlset>\n`;
 await writeFile(join(output, "sitemap.xml"), sitemap);
 console.log(`Generated ${sitemapPaths.length} search-ready pages and sitemap.xml`);

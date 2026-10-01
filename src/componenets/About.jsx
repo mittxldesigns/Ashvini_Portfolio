@@ -2,6 +2,7 @@ import HeaderNav from "./HeaderNav.jsx";
 import TransitionLink from "./TransitionLink.jsx";
 import { caseStudies, projects } from "../data/projects.js";
 import { timeline } from "../data/experience.js";
+import { faq } from "../data/faq.js";
 
 const batla = "/avatar.webp";
 
@@ -75,6 +76,16 @@ function About() {
             <span>ZBrush</span>
             <span>Framer</span>
             <span>Webflow</span>
+          </div>
+
+          <div className="about-faq">
+            <h2>Quick answers</h2>
+            {faq.map((item) => (
+              <details key={item.q}>
+                <summary>{item.q}</summary>
+                <p>{item.a}</p>
+              </details>
+            ))}
           </div>
 
           <div className="case-studies">

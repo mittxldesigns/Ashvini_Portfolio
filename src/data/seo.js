@@ -1,4 +1,6 @@
 import { CONTRA_PROFILE, pieces } from "./projectContent.js";
+import { EDITORIAL_CATEGORIES, posts as editorialPosts } from "./editorialContent.js";
+import { faq } from "./faq.js";
 
 export const SITE_URL = "https://bettercallashvini.com";
 export const PERSON_NAME = "Ashvini Kumar";
@@ -19,7 +21,7 @@ export function getSeoForPath(pathname) {
     return {
       ...base,
       kind: "home",
-      title: `${PERSON_NAME} — 3D Artist & Spline Designer`,
+      title: `${PERSON_NAME} — 3D Artist & Social Editorial Designer`,
       description: homeDescription,
     };
   }
@@ -38,9 +40,9 @@ export function getSeoForPath(pathname) {
     return {
       ...base,
       kind: "about",
-      title: `About ${PERSON_NAME} — 3D Artist & Spline Designer`,
+      title: `About ${PERSON_NAME} — 3D Artist & Editorial Designer`,
       description:
-        "Meet Ashvini Kumar, a 3D artist and Spline designer creating product visuals and interactive web scenes.",
+        "Ashvini Kumar is a 3D artist and social & editorial designer: Senior Designer at Animated Times, Graphic Designer at FandomWire, and a top 1% Spline expert on Contra.",
     };
   }
 
@@ -48,6 +50,7 @@ export function getSeoForPath(pathname) {
     return {
       ...base,
       kind: "editorial",
+      image: `${SITE_URL}/og-editorial.jpg`,
       title: `Social & Editorial Design — ${PERSON_NAME}`,
       description:
         "Ashvini Kumar's social and editorial design: six years of covers, thumbnails and posts for pop-culture publishers FandomWire and Animated Times. His 3D and Web3D work is on the same site.",
@@ -82,10 +85,26 @@ export function getStructuredData(page, image = page.image) {
     name: PERSON_NAME,
     url: SITE_URL,
     image: `${SITE_URL}/avatar.webp`,
-    jobTitle: "3D Artist and Spline Designer",
+    alternateName: ["Ashwani Kumar", "Ashvini"],
+    jobTitle: ["3D Artist", "Social & Editorial Designer", "Video Editor"],
+    description:
+      "3D artist and social & editorial designer from Lucknow, India. Senior Designer & Video Editor at Animated Times and Graphic Designer at FandomWire since 2020; freelance Spline and Web3D designer.",
+    homeLocation: { "@type": "Place", name: "Lucknow, Uttar Pradesh, India" },
+    worksFor: [
+      { "@type": "Organization", name: "Animated Times", url: "https://www.animatedtimes.com" },
+      { "@type": "Organization", name: "FandomWire", url: "https://fandomwire.com" },
+    ],
+    alumniOf: { "@type": "EducationalOrganization", name: "MAAC (Maya Academy of Advanced Cinematics)" },
+    knowsAbout: [
+      "3D modeling", "Spline", "Blender", "Autodesk 3ds Max", "Web3D", "Product visualization",
+      "Social media design", "Editorial design", "Thumbnail design", "Video editing",
+      "Adobe Photoshop", "Adobe Illustrator", "Adobe Premiere Pro", "Adobe After Effects",
+    ],
     sameAs: [
       "https://contra.com/ashvini_kmr",
       "https://instagram.com/ashvini_kmr",
+      "https://www.linkedin.com/in/ashwani-kumar-b899b5188",
+      "https://community.spline.design/bettercallashvini",
     ],
   };
 
@@ -137,8 +156,26 @@ export function getStructuredData(page, image = page.image) {
         {
           "@type": "CollectionPage",
           name: "Social & Editorial Design",
+          description: page.description,
           url: page.canonical,
           creator: { "@id": person["@id"] },
+          about: EDITORIAL_CATEGORIES.map((c) => c.label),
+          mainEntity: {
+            "@type": "ItemList",
+            itemListElement: editorialPosts.map((post, index) => ({
+              "@type": "ListItem",
+              position: index + 1,
+              item: {
+                "@type": "CreativeWork",
+                name: post.title,
+                description: post.note,
+                genre: EDITORIAL_CATEGORIES.find((c) => c.id === post.category)?.label,
+                url: post.url,
+                creator: { "@id": person["@id"] },
+                publisher: { "@type": "Organization", name: "FandomWire" },
+              },
+            })),
+          },
         },
       ],
     };
@@ -150,10 +187,18 @@ export function getStructuredData(page, image = page.image) {
       "@graph": [
         person,
         {
-          "@type": "AboutPage",
+          "@type": "ProfilePage",
           name: `About ${PERSON_NAME}`,
           url: page.canonical,
           mainEntity: { "@id": person["@id"] },
+        },
+        {
+          "@type": "FAQPage",
+          mainEntity: faq.map((item) => ({
+            "@type": "Question",
+            name: item.q,
+            acceptedAnswer: { "@type": "Answer", text: item.a },
+          })),
         },
       ],
     };

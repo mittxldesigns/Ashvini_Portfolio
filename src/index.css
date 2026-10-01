@@ -2540,3 +2540,52 @@ html[data-vt="swap"]::view-transition-old(root) {
     gap: 4px;
   }
 }
+
+/* about: quick answers (also FAQPage structured data) */
+.about-faq {
+  max-width: 640px;
+  margin-bottom: 36px;
+}
+
+.about-faq h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #b9bec3;
+  margin-bottom: 10px;
+}
+
+.about-faq details {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.about-faq summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 13px 24px 13px 0;
+  position: relative;
+  color: #e6e8eb;
+  font-size: 14.5px;
+}
+
+.about-faq summary::-webkit-details-marker { display: none; }
+
+.about-faq summary::after {
+  content: "+";
+  position: absolute;
+  right: 2px;
+  top: 11px;
+  color: #008fef;
+  font-size: 18px;
+}
+
+.about-faq details[open] summary::after {
+  content: "–";
+}
+
+.about-faq details p {
+  color: #a9afb5;
+  font-size: 13.5px;
+  line-height: 1.55;
+  padding: 0 0 14px;
+  text-align: left;
+}
