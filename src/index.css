@@ -3085,11 +3085,13 @@ html[data-vt="swap"]::view-transition-old(root) {
   .sk-hero-pin { max-width: 78%; margin: 22px auto 0; --t: 1deg !important; }
   .sk-callout { top: -40px; left: 0; font-size: 28px; }
 
-  .sk-tabs { padding: 56px 20px 8px; }
+  .sk-tabs { padding: 56px 20px 8px; flex-wrap: wrap; overflow-x: visible; }
   .sk-tabs button { font-size: 22px; transform: none; }
 
   .sk-chapter,
   .sk-journey { padding: 18px 20px 40px; }
+  .sk-chapter,
+  .sk-journey { scroll-margin-top: 148px; }
   .sk-chapter-head { margin-bottom: 22px; }
   .sk-chapter-note { font-size: 26px; transform: none; }
 
