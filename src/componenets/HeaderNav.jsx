@@ -7,7 +7,9 @@ const batla = "/avatar.webp";
 
 function HeaderNav() {
   const detail = useMatch("/portfolio/:id");
-  const onEditorial = useLocation().pathname.startsWith("/editorial");
+  const { pathname } = useLocation();
+  // which half of the work you're looking at; About shows neither as active
+  const side = pathname.startsWith("/editorial") ? "editorial" : pathname.startsWith("/portfolio") ? "3d" : null;
 
   return (
     <div className="headernav">
@@ -22,11 +24,14 @@ function HeaderNav() {
         Ashvini
       </TransitionLink>
       <div className="header-actions">
-        {onEditorial ? (
-          <TransitionLink className="header-contact" to="/portfolio">3D work</TransitionLink>
-        ) : (
-          <TransitionLink className="header-contact" to="/editorial">Social &amp; editorial</TransitionLink>
-        )}
+        <nav className="work-switch" aria-label="Choose the type of work">
+          <TransitionLink to="/portfolio" aria-current={side === "3d" ? "page" : undefined}>
+            3D <span className="work-switch-long">&amp; Web3D</span>
+          </TransitionLink>
+          <TransitionLink to="/editorial" aria-current={side === "editorial" ? "page" : undefined}>
+            Social <span className="work-switch-long">&amp; editorial</span>
+          </TransitionLink>
+        </nav>
         <a
           className="header-contact"
           href={CONTRA_PROFILE}

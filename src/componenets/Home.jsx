@@ -103,7 +103,7 @@ function Home() {
       <div className="home-container">
         <div className="home-content">
           <h1>Ashvini Kumar</h1>
-          <p>Artist & 3D Designer</p>
+          <p>3D artist · social &amp; editorial designer</p>
 
           <div className="home-track">
             <TransitionLink
@@ -113,10 +113,10 @@ function Home() {
               onBeforeNavigate={enterGrid}
               beforeNavigate={() => decodeThumb(featured)}
             >
-              Explore the work
+              3D &amp; Web3D work
             </TransitionLink>
             <TransitionLink className="cta cta-outline" to="/editorial">
-              Social &amp; editorial design
+              Social &amp; editorial work
             </TransitionLink>
           </div>
           <a className="home-contact" href={CONTRA_PROFILE} target="_blank" rel="noreferrer">

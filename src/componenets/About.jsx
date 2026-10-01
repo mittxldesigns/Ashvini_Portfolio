@@ -1,4 +1,5 @@
 import HeaderNav from "./HeaderNav.jsx";
+import TransitionLink from "./TransitionLink.jsx";
 import { caseStudies, projects } from "../data/projects.js";
 
 const batla = "/avatar.webp";
@@ -36,6 +37,19 @@ function About() {
             for Athletic Power, and a scroll-driven visual experience for
             Mebrafino.
           </p>
+
+          <div className="about-sides">
+            <TransitionLink to="/portfolio">
+              <span>3D &amp; Web3D</span>
+              <strong>Product models and interactive scenes for the web.</strong>
+              <em>Spline · Blender · 3ds Max →</em>
+            </TransitionLink>
+            <TransitionLink to="/editorial">
+              <span>Social &amp; editorial</span>
+              <strong>Six years of covers, thumbnails and posts for pop-culture publishers.</strong>
+              <em>FandomWire · Animated Times →</em>
+            </TransitionLink>
+          </div>
 
           <div className="about-skills">
             <span>Spline</span>

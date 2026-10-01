@@ -4,7 +4,7 @@ export const SITE_URL = "https://bettercallashvini.com";
 export const PERSON_NAME = "Ashvini Kumar";
 
 const homeDescription =
-  "Interactive 3D scenes, product models, and motion for the web by Ashvini Kumar.";
+  "Interactive 3D scenes, product models, and motion for the web by Ashvini Kumar, plus six years of social and editorial design for pop-culture publishers.";
 
 export function getSeoForPath(pathname) {
   const path = pathname === "/" ? "/" : pathname.replace(/\/+$/, "");
@@ -50,7 +50,7 @@ export function getSeoForPath(pathname) {
       kind: "editorial",
       title: `Social & Editorial Design — ${PERSON_NAME}`,
       description:
-        "Social posts, covers and thumbnails Ashvini Kumar designed for pop-culture publishers FandomWire and Animated Times.",
+        "Ashvini Kumar's social and editorial design: six years of covers, thumbnails and posts for pop-culture publishers FandomWire and Animated Times. His 3D and Web3D work is on the same site.",
     };
   }
 

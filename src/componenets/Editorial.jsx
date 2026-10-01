@@ -2,10 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import HeaderNav from "./HeaderNav.jsx";
 import TransitionLink from "./TransitionLink.jsx";
-import { CONTRA_PROFILE } from "../data/projects.js";
+import { CONTRA_PROFILE, projects } from "../data/projects.js";
 import { EDITORIAL_CATEGORIES, editorialPosts } from "../data/editorial.js";
 
 const byCategory = (id) => editorialPosts.filter((p) => p.category === id);
+// a few 3D pieces to show the other half of the work, linking into the grid
+const otherHalf = ["nothing-headphones", "teenage-engineering-tp7", "heygen-glass", "worklouder-keypad"]
+  .map((slug) => projects.find((p) => p.slug === slug))
+  .filter(Boolean);
 
 function Thumb({ post, eager = false, className = "" }) {
   return (
@@ -107,25 +111,25 @@ function Editorial() {
           </div>
           <div className="ed-hero-shade" aria-hidden="true" />
           <div className="ed-hero-copy">
-            <p className="ed-kicker reveal">Social &amp; editorial design · FandomWire · Animated Times</p>
+            <p className="ed-kicker reveal">Ashvini Kumar · social &amp; editorial design</p>
             <h1 id="ed-title" className="reveal" style={{ "--d": "80ms" }}>
               Built to stop<br />the scroll.
             </h1>
             <p className="ed-hero-lede reveal" style={{ "--d": "160ms" }}>
-              Six years designing the covers, thumbnails and campaigns pop-culture publishers
-              post every day. Fast turnarounds, sharp typography, a house style held across
-              a daily stream of stories.
+              Before I got into 3D, I was a newsroom designer, and I still am. For six years I've
+              made the covers, thumbnails and posts that FandomWire and Animated Times put out
+              every day: Marvel, DC and everything in between, often on tight deadlines.
             </p>
             <div className="ed-hero-actions reveal" style={{ "--d": "240ms" }}>
-              <a className="cta" href={CONTRA_PROFILE} target="_blank" rel="noreferrer">Hire Ashvini</a>
+              <a className="cta" href={CONTRA_PROFILE} target="_blank" rel="noreferrer">Work with me</a>
               <button type="button" className="cta cta-outline" onClick={() => scrollTo("chapter-news")}>See the work ↓</button>
             </div>
           </div>
           <dl className="ed-stats reveal" style={{ "--d": "320ms" }}>
-            <div><dt>6 yrs</dt><dd>editorial &amp; social design</dd></div>
+            <div><dt>6 yrs</dt><dd>designing for the feed</dd></div>
+            <div><dt>Daily</dt><dd>posts, on deadline</dd></div>
             <div><dt>2</dt><dd>pop-culture publishers</dd></div>
-            <div><dt>Daily</dt><dd>high-volume newsroom output</dd></div>
-            <div><dt>4</dt><dd>formats below</dd></div>
+            <div><dt>+ 3D</dt><dd><TransitionLink to="/portfolio">and Web3D work too →</TransitionLink></dd></div>
           </dl>
         </section>
 
@@ -162,16 +166,16 @@ function Editorial() {
         <section className="ed-feed ed-appear" id="ed-feed">
           <div className="ed-feed-copy">
             <span className="ed-num">In the feed</span>
-            <h2>Designed for the thumb, not the gallery.</h2>
+            <h2>I design for the thumb, not the gallery.</h2>
             <p>
-              Every post is read at phone size, in a fraction of a second, between a hundred others.
-              Headline first, one hero image, a badge that says what the story is. That's the brief,
-              every day.
+              Everything I make here gets judged at phone size, in half a second, between a hundred
+              other posts. So the headline leads, one image carries it, and the badge tells you what
+              kind of story it is before you've read a word.
             </p>
             <ul className="ed-craft">
-              <li>Headline hierarchy that reads at thumbnail size</li>
-              <li>Key-art compositing from stills and posters</li>
-              <li>Templates that keep a newsroom on-brand</li>
+              <li>Headlines that still read at thumbnail size</li>
+              <li>Key art built from film stills and posters</li>
+              <li>Templates that keep a busy newsroom on-brand</li>
               <li>Photoshop · Illustrator · Premiere Pro · After Effects</li>
             </ul>
           </div>
@@ -209,7 +213,7 @@ function Editorial() {
             <span className="ed-num">03</span>
             <div>
               <h2>Timelines &amp; retrospectives</h2>
-              <p>{EDITORIAL_CATEGORIES[2].blurb} Scroll sideways.</p>
+              <p>{EDITORIAL_CATEGORIES[2].blurb} Swipe or scroll sideways.</p>
             </div>
           </header>
           <div className="ed-strip" tabIndex={0} aria-label="Retrospective posts, scroll horizontally">
@@ -238,21 +242,45 @@ function Editorial() {
               </button>
               <div className="ed-data-copy">
                 <h3>{post.title}</h3>
-                <p>{post.note} Ten rows, ten faces, one number each: legible in the time it takes to scroll past.</p>
+                <p>{post.note} Ten rows, ten faces, one number each, readable before your thumb moves on.</p>
               </div>
             </div>
           ))}
         </section>
 
+        {/* ---------- the other half: 3D ---------- */}
+        <section className="ed-other ed-appear" aria-labelledby="ed-other-title">
+          <div className="ed-other-copy">
+            <span className="ed-num">The other half</span>
+            <h2 id="ed-other-title">I also build things in 3D.</h2>
+            <p>
+              Product models and interactive scenes for the web, in Spline, Blender and 3ds Max:
+              headphones you can spin, a keyboard you can press, backgrounds for HeyGen. Same eye
+              for detail, different tools.
+            </p>
+            <TransitionLink className="cta cta-outline" to="/portfolio">Explore the 3D &amp; Web3D work →</TransitionLink>
+          </div>
+          <div className="ed-other-grid">
+            {otherHalf.map((p) => (
+              <TransitionLink key={p.slug} to={`/portfolio/${p.id}`} className="ed-other-tile" aria-label={p.title}>
+                <picture>
+                  <source srcSet={p.thumbAvif} type="image/avif" />
+                  <img src={p.thumbWebp} alt={p.title} loading="lazy" decoding="async" />
+                </picture>
+              </TransitionLink>
+            ))}
+          </div>
+        </section>
+
         {/* ---------- closing CTA ---------- */}
         <section className="ed-close ed-appear">
-          <h2>Hiring for social, editorial or thumbnail design?</h2>
-          <p>Remote, available immediately, used to newsroom pace and US-based teams.</p>
+          <h2>Need someone for social, editorial or thumbnails?</h2>
+          <p>I work remotely, can start right away, and I'm used to newsroom deadlines and teams in the US.</p>
           <div className="ed-hero-actions">
-            <a className="cta" href={CONTRA_PROFILE} target="_blank" rel="noreferrer">Message Ashvini</a>
-            <TransitionLink className="cta cta-outline" to="/portfolio">See his 3D &amp; Web3D work</TransitionLink>
+            <a className="cta" href={CONTRA_PROFILE} target="_blank" rel="noreferrer">Message me on Contra</a>
+            <TransitionLink className="cta cta-outline" to="/about">More about me</TransitionLink>
           </div>
-          <p className="ed-credit">Posts designed for FandomWire; each links to the original.</p>
+          <p className="ed-credit">Posts I designed for FandomWire. Open any piece to see the original.</p>
         </section>
       </div>
 

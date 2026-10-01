@@ -11,22 +11,22 @@ export const EDITORIAL_CATEGORIES = [
   {
     id: "news",
     label: "News & theory covers",
-    blurb: "Headline-led covers that turn breaking stories and fan theories into a stop-the-scroll image.",
+    blurb: "Breaking news and fan theories, each turned into one image you stop for.",
   },
   {
     id: "campaigns",
     label: "Reviews & campaigns",
-    blurb: "Review score cards and awareness posts with their own visual system.",
+    blurb: "Review score cards and release-week posts, each with its own look.",
   },
   {
     id: "retrospectives",
     label: "Timelines & retrospectives",
-    blurb: "Evolution collages and filmographies that stitch decades of film stills into one frame.",
+    blurb: "Decades of film stills, stitched into a single frame.",
   },
   {
     id: "data",
     label: "Data graphics",
-    blurb: "Rankings and numbers designed to be read in a second.",
+    blurb: "Rankings you can read in a second.",
   },
 ];
 
