@@ -1,6 +1,7 @@
 import { CONTRA_PROFILE, pieces } from "./projectContent.js";
 import { EDITORIAL_CATEGORIES, posts as editorialPosts } from "./editorialContent.js";
 import { faq } from "./faq.js";
+import { SKETCH_CHAPTERS, sketches as sketchList } from "./sketchesContent.js";
 
 export const SITE_URL = "https://bettercallashvini.com";
 export const PERSON_NAME = "Ashvini Kumar";
@@ -54,6 +55,16 @@ export function getSeoForPath(pathname) {
       title: `Social & Editorial Design — ${PERSON_NAME}`,
       description:
         "Ashvini Kumar's social and editorial design: six years of covers, thumbnails and posts for pop-culture publishers FandomWire and Animated Times. His 3D and Web3D work is on the same site.",
+    };
+  }
+
+  if (path === "/sketches") {
+    return {
+      ...base,
+      kind: "sketches",
+      title: `Sketchbook: Digital Paintings & Pencil Art — ${PERSON_NAME}`,
+      description:
+        "Ashvini Kumar's artist side: film poster concepts, character paintings and scene studies in Photoshop, plus graphite fan art and paid ink cover commissions since 2017.",
     };
   }
 
@@ -141,6 +152,39 @@ export function getStructuredData(page, image = page.image) {
               position: index + 1,
               name: piece.title,
               url: `${SITE_URL}/portfolio/${piece.id}`,
+            })),
+          },
+        },
+      ],
+    };
+  }
+
+  if (page.kind === "sketches") {
+    return {
+      "@context": "https://schema.org",
+      "@graph": [
+        person,
+        {
+          "@type": "CollectionPage",
+          name: "Sketchbook",
+          description: page.description,
+          url: page.canonical,
+          creator: { "@id": person["@id"] },
+          about: SKETCH_CHAPTERS.map((c) => c.label),
+          mainEntity: {
+            "@type": "ItemList",
+            itemListElement: sketchList.map((s, index) => ({
+              "@type": "ListItem",
+              position: index + 1,
+              item: {
+                "@type": "VisualArtwork",
+                name: s.title,
+                artMedium: s.medium,
+                dateCreated: String(s.year),
+                description: s.note,
+                url: s.url,
+                creator: { "@id": person["@id"] },
+              },
             })),
           },
         },

@@ -6,6 +6,7 @@ import Home from "./componenets/Home.jsx";
 import HeaderNav from "./componenets/HeaderNav.jsx";
 import About from "./componenets/About.jsx";
 import Editorial from "./componenets/Editorial.jsx";
+import Sketches from "./componenets/Sketches.jsx";
 import ProjectDetail from "./componenets/ProjectDetail.jsx";
 import SeoHead from "./componenets/SeoHead.jsx";
 import { notifyRouteCommit } from "./lib/viewTransition.js";
@@ -41,6 +42,7 @@ function App() {
         <Route path="/portfolio/:id" element={<ProjectDetail />} />
         <Route path="/about" element={<About />} />
         <Route path="/editorial" element={<Editorial />} />
+        <Route path="/sketches" element={<Sketches />} />
       </Routes>
       <RouteCommitSignal />
     </BrowserRouter>

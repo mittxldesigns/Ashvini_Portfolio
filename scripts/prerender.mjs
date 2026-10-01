@@ -5,6 +5,7 @@ import { pieces, CONTRA_PROFILE } from "../src/data/projectContent.js";
 import { EDITORIAL_CATEGORIES, posts as editorialPosts } from "../src/data/editorialContent.js";
 import { publishers, timeline, COMBINED_FOLLOWERS, AUDIENCE_CHECKED } from "../src/data/experience.js";
 import { faq } from "../src/data/faq.js";
+import { SKETCH_CHAPTERS, sketches } from "../src/data/sketchesContent.js";
 import {
   getSeoForPath,
   getStructuredData,
@@ -106,6 +107,15 @@ function editorialShell() {
   return `<main class="seo-shell"><a class="seo-home-link" href="/">${escapeHtml(PERSON_NAME)}</a><h1>Social &amp; editorial design by ${escapeHtml(PERSON_NAME)}</h1><p>For six years Ashvini has designed the covers, thumbnails and social posts that pop-culture publishers Animated Times and FandomWire publish every day. His work reaches ${escapeHtml(COMBINED_FOLLOWERS)} followers across the two publishers' pages (public counts, ${escapeHtml(AUDIENCE_CHECKED)}).</p><h2>Where the work runs</h2><ul>${pubs}</ul>${chapters}<a class="seo-contact" href="/portfolio">See the 3D &amp; Web3D work →</a></main>`;
 }
 
+function sketchesShell() {
+  const chapters = SKETCH_CHAPTERS.map((c) => {
+    const items = sketches.filter((s) => s.chapter === c.id)
+      .map((s) => `<li><a href="${escapeHtml(s.url)}">${escapeHtml(s.title)}</a> (${escapeHtml(s.medium)}, ${s.year}): ${escapeHtml(s.note)}</li>`).join("");
+    return `<h2>${escapeHtml(c.label)}</h2><p>${escapeHtml(c.blurb)}</p><ul>${items}</ul>`;
+  }).join("");
+  return `<main class="seo-shell"><a class="seo-home-link" href="/">${escapeHtml(PERSON_NAME)}</a><h1>Sketchbook: the artist side of ${escapeHtml(PERSON_NAME)}</h1><p>Film poster concepts, character paintings and scene studies in Photoshop, plus graphite fan art and paid ink cover commissions, from 2017 to today.</p>${chapters}<a class="seo-contact" href="${escapeHtml(CONTRA_PROFILE)}">Commission a piece ↗</a></main>`;
+}
+
 function notFoundShell() {
   return `<main class="seo-shell"><h1>Page not found</h1><p>That project page is not in this portfolio.</p><a class="seo-contact" href="/portfolio">Explore the work →</a></main>`;
 }
@@ -125,6 +135,7 @@ await writePage("/", "index.html", homeShell);
 await writePage("/portfolio", "portfolio.html", portfolioShell());
 await writePage("/about", "about.html", aboutShell());
 await writePage("/editorial", "editorial.html", editorialShell());
+await writePage("/sketches", "sketches.html", sketchesShell());
 for (const [index, piece] of pieces.entries()) {
   const path = `/portfolio/${piece.id}`;
   const page = getSeoForPath(path);
@@ -132,7 +143,7 @@ for (const [index, piece] of pieces.entries()) {
 }
 await writePage("/404", "404.html", notFoundShell());
 
-const sitemapPaths = ["/", "/portfolio", "/about", "/editorial", ...pieces.map((piece) => `/portfolio/${piece.id}`)];
+const sitemapPaths = ["/", "/portfolio", "/about", "/editorial", "/sketches", ...pieces.map((piece) => `/portfolio/${piece.id}`)];
 const lastmod = new Date().toISOString().slice(0, 10);
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapPaths.map((path) => `  <url><loc>${SITE_URL}${path}</loc><lastmod>${lastmod}</lastmod></url>`).join("\n")}\n</urlset>\n`;
 await writeFile(join(output, "sitemap.xml"), sitemap);

@@ -9,10 +9,10 @@ function HeaderNav() {
   const detail = useMatch("/portfolio/:id");
   const { pathname } = useLocation();
   // which half of the work you're looking at; About shows neither as active
-  const side = pathname.startsWith("/editorial") ? "editorial" : pathname.startsWith("/portfolio") ? "3d" : null;
+  const side = pathname.startsWith("/editorial") ? "editorial" : pathname.startsWith("/sketches") ? "sketches" : pathname.startsWith("/portfolio") ? "3d" : null;
 
   return (
-    <div className="headernav">
+    <div className={side === "sketches" ? "headernav headernav--paper" : "headernav"}>
       <TransitionLink
         className="name"
         to="/portfolio"
@@ -30,6 +30,9 @@ function HeaderNav() {
           </TransitionLink>
           <TransitionLink to="/editorial" aria-current={side === "editorial" ? "page" : undefined}>
             Social <span className="work-switch-long">&amp; editorial</span>
+          </TransitionLink>
+          <TransitionLink to="/sketches" aria-current={side === "sketches" ? "page" : undefined}>
+            Sketches
           </TransitionLink>
         </nav>
         <a
