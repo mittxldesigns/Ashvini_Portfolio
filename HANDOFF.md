@@ -64,3 +64,17 @@ Build inside the existing extension (`~/Downloads/linkedin-autoapply/`):
 - Pacing: check every 20-40 min (random), only during active hours, max one tab driver (reuse the lock), pause while an application is in progress; don't hammer LinkedIn.
 - Optional later: also scan Gmail (kumarak9335@gmail.com) for recruiter emails via the Gmail connector, read-only.
 - Tests: extend `tests/sim.js` with a fake inbox/notifications page; verify classification + no-send guarantee.
+
+## Verified continuation checkpoint
+- Latest site preview: https://sketches-draft.ashvini-portfolio.pages.dev/sketches (deployment `2c039e6d`, source `98108af`). Production and the push to `main` still await Tanish's "go".
+- Phone hero now puts the full-width, upright artwork immediately below SKETCHBOOK; smaller handwriting/labels, two-row phone header, no long phone intro. Desktop layout retained; Bangles and @siimipie credit retained.
+- Paper entry slides in; exit lifts the whole paper header with the sheet. Social is captured fully visible underneath. Active work pill glides; dark-to-dark motion retained; reduced motion skips transitions.
+- Home/About/llms.txt links were authorized for the preview and are prepared. Crawlable HTML now links all site sections; unverified build-date sitemap lastmod values removed.
+- Site checks passed: npm run lint, npm run build, inline browser at 375/320/1440px, 21 HTML/20 indexable-route crawl + schema audit, no broken internal links.
+- Site checkpoints: `2424f60` phone tabs; `73bd2bf` paper transitions/tab/header; `84c2b3c` SEO/internal links; `37977d7` paper-header exit; `98108af` artwork first + phone typography.
+- Bot source is now v1.5.0; manifest and version.txt match. Self-reload trigger updated; the actual Chrome loaded version was not inspected.
+- Bot now has local Git source tracking on feat/editorial-work, no remote: `5c90d6b` persistent limitUntil/default ~32; `035ce81` inbox/lead monitor.
+- Monitor: persisted 20–40 minute checks during 07:00–01:00, shared serialized driver lock, safe pauses between applications, quiet first baselines, hot-item alerts, Leads tab and neutral manual drafts. No send/accept/composer actions.
+- Bot checks passed: node tests/rules.test.js (79), tests/monitor.test.js (113), full tests/test.js integration suite, syntax and whitespace. jsdom is in the Codex chat's work/bot-test-runtime; use its node_modules as NODE_PATH, without installing into the extension.
+- Live LinkedIn collector layouts remain unverified. Coverage is up to 80 rendered previews per source, without opening threads or pagination; unknown structures preserve baselines and report source errors in Leads.
+- Original historical TODOs above are superseded by these completed source checkpoints; production approval and live collector validation remain outstanding.
