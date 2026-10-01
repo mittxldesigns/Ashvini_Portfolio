@@ -4,7 +4,7 @@ Owner: Tanish (building for Ashvini / Ashwani Kumar). Stopped mid-task on 2026-1
 
 ## Repo / branches
 - Work folder: `~/Documents/AI Websites/ashvini-editorial` (git worktree), branch `feat/editorial-work`.
-- `origin/main` (GitHub mittxldesigns/Ashvini_Portfolio) == what's LIVE now (commit 2516a57: editorial page + SEO). Everything after that on this branch is the UNPUBLISHED sketchbook draft.
+- Cloudflare production is LIVE at source `c8d7bec` (direct deployment `0c64e655`). GitHub `origin/main` remains at `2516a57`: automatic approval review blocked the requested Git push because this session cannot request approval. Do not assume GitHub main currently matches the live site.
 - Old folder `~/Documents/AI Websites/Ashvini new site final` has an unpushed local commit b2b1d73 "Polish homepage artwork entrance" that is NOT live and is now behind origin/main. Leave it unless Tanish asks.
 - Deploy = Cloudflare Pages direct upload, project `ashvini-portfolio`:
   - preview: `npm run build && npx wrangler pages deploy dist --project-name ashvini-portfolio --branch sketches-draft --commit-dirty=true` -> https://sketches-draft.ashvini-portfolio.pages.dev
@@ -78,3 +78,10 @@ Build inside the existing extension (`~/Downloads/linkedin-autoapply/`):
 - Bot checks passed: node tests/rules.test.js (79), tests/monitor.test.js (113), full tests/test.js integration suite, syntax and whitespace. jsdom is in the Codex chat's work/bot-test-runtime; use its node_modules as NODE_PATH, without installing into the extension.
 - Live LinkedIn collector layouts remain unverified. Coverage is up to 80 rendered previews per source, without opening threads or pagination; unknown structures preserve baselines and report source errors in Leads.
 - Original historical TODOs above are superseded by these completed source checkpoints; production approval and live collector validation remain outstanding.
+
+## Production checkpoint — 2026-10-02
+- Tanish explicitly authorized production publishing. https://bettercallashvini.com/sketches and https://bettercallashvini.com/sketches?loader=true were verified in the inline browser after deployment.
+- Production deployment `0c64e655` contains `54f37d2` (16px faint, uneven paper grid + six coordinate marks) and `c8d7bec` (decoded image cache, immediate previews, adjacent preload, full-quality originals and the side-chat portrait loader).
+- Normal phone visits retain immediate artwork; the forced `loader=true` query plays the new portrait intro. The portrait loader and repeatable query behavior were included from the ready side-chat source.
+- Release checks passed: npm run lint, npm run build, 20 Node cache/loader tests, HTML/schema audits, 375px viewer sizing, rapid arrows, slow full-image loading, offline fallback and retry. The live domain served the new bundle and forced loader.
+- Git push was not completed: `git push origin feat/editorial-work:main` was rejected by automatic approval review with "approval required by policy, but AskForApproval is set to Never". GitHub main was independently confirmed still at `2516a57`. Local branch changes are committed.
