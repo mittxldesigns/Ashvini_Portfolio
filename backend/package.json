@@ -1,0 +1,20 @@
+{
+  "name": "ashvini-owner-cms",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "types": "wrangler types",
+    "typecheck": "wrangler types && tsc --noEmit",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "build": "wrangler deploy --dry-run --outdir .build"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "latest",
+    "@types/node": "^22.15.0",
+    "esbuild": "^0.28.1",
+    "miniflare": "latest",
+    "typescript": "latest",
+    "wrangler": "latest"
+  }
+}

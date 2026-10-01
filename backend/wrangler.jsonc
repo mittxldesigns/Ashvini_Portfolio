@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "ashvini-owner-cms",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "vars": {
+    "OWNER_EMAIL": "kumarak9335@gmail.com",
+    "PAGES_ORIGIN": "https://ashvini-portfolio.pages.dev",
+    "SITE_ORIGIN": "https://bettercallashvini.com",
+    "PROXY_ENABLED": "false"
+  },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "ashvini-owner-cms",
+    "database_id": "ea848e4c-59ff-492e-996d-acaa13381ea8",
+    "migrations_dir": "migrations"
+  }],
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "ashvini-portfolio-media" }],
+  "observability": { "enabled": true, "head_sampling_rate": 0.1 }
+}
