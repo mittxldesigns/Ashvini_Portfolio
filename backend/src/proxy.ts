@@ -40,6 +40,7 @@ function shell(content: Content, pathname: string) {
 }
 export async function proxy(env: Env, request: Request) {
   const incoming = new URL(request.url);
+  const admin = incoming.pathname === "/admin" || incoming.pathname.startsWith("/admin/");
   const needsSnapshot = routes.includes(incoming.pathname) || /^\/portfolio\/\d+\/?$/.test(incoming.pathname) || ["/sitemap.xml","/llms.txt"].includes(incoming.pathname);
   const snapshot = needsSnapshot ? await published(env) : null;
   if (snapshot && incoming.pathname === "/sitemap.xml") {
@@ -50,18 +51,29 @@ export async function proxy(env: Env, request: Request) {
     const text = `# ${snapshot.profile.name}\n\n${snapshot.profile.homeDescription || ""}\n\n## Pages\n${routes.map((path) => `- [${path === "/" ? "Home" : path.slice(1)}](${env.SITE_ORIGIN}${path})`).join("\n")}\n\n## 3D projects\n${snapshot.projects.filter((entry) => !entry.nsfw).map((entry) => `- [${entry.title}](${env.SITE_ORIGIN}/portfolio/${entry.id}): ${entry.description || ""}`).join("\n")}\n`;
     return new Response(text,{headers:{"Content-Type":"text/plain; charset=utf-8","Cache-Control":"no-cache"}});
   }
-  const target = new URL(incoming.pathname+incoming.search,env.PAGES_ORIGIN);
+  const target = new URL(env.PAGES_ORIGIN);
+  target.pathname = admin ? "/" : incoming.pathname;
+  target.search = admin ? "" : incoming.search;
   const headers = new Headers(request.headers);
   headers.delete("Cookie"); headers.delete("Authorization"); headers.delete("X-CSRF-Token"); headers.delete("X-Setup-Token"); headers.delete("Host");
-  const response = await fetch(new Request(target,{method:request.method,headers,redirect:"manual"}));
-  if (incoming.pathname === "/admin" || incoming.pathname.startsWith("/admin/")) {
+  let response = await fetch(new Request(target,{method:request.method,headers,redirect:"manual"}));
+  if (response.headers.has("Set-Cookie")) {
+    const cleanHeaders = new Headers(response.headers); cleanHeaders.delete("Set-Cookie");
+    response = new Response(response.body,{status:response.status,headers:cleanHeaders});
+  }
+  if (admin) {
     const protectedHeaders = new Headers(response.headers);
     protectedHeaders.set("X-Robots-Tag","noindex, nofollow, noarchive");
     protectedHeaders.set("X-Frame-Options","DENY");
     protectedHeaders.set("Content-Security-Policy","frame-ancestors 'none'");
     protectedHeaders.set("Referrer-Policy","no-referrer");
     protectedHeaders.set("Cache-Control","private, no-store");
-    return new Response(response.body,{status:response.status,headers:protectedHeaders});
+    const protectedResponse = new Response(response.body,{status:response.status,headers:protectedHeaders});
+    const adminSeo = getSeoForPath(incoming.pathname,{siteUrl:env.SITE_ORIGIN});
+    return new HTMLRewriter()
+      .on("head",{element(element) { element.append(`<title>${escape(adminSeo.title)}</title><meta name="robots" content="noindex,nofollow,noarchive">`,{html:true}); }})
+      .on('title,link[rel="canonical"],meta[name="robots"],meta[property^="og:"],meta[name^="twitter:"],script[type="application/ld+json"],#portfolio-content',{element(element) { element.remove(); }})
+      .on("#root",{element(element) { element.setInnerContent('<main class="seo-shell"><h1>Portfolio editor</h1><p>Opening the editor…</p></main>',{html:true}); }}).transform(protectedResponse);
   }
   if (!snapshot || request.method !== "GET" || !response.headers.get("Content-Type")?.includes("text/html") || (!routes.includes(incoming.pathname) && !/^\/portfolio\/\d+\/?$/.test(incoming.pathname))) return response;
   const seo = routeSeo(snapshot,incoming.pathname,env.SITE_ORIGIN), outputHeaders = new Headers(response.headers);

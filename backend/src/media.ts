@@ -90,3 +90,14 @@ export async function serveMedia(env: Env, request: Request, id: string, variant
   else headers.set("Content-Length",String(object.size));
   return new Response(request.method === "HEAD" ? null : object.body,{status,headers});
 }
+
+export async function serveSiteTour(env: Env, request: Request) {
+  const range = request.headers.get("Range");
+  const object = await env.MEDIA.get("site-tour.mp4",range ? {range:request.headers} : {});
+  if (!object) throw new HttpError(404,"video_missing","The site tour was not found.");
+  const headers = new Headers({"Content-Type":"video/mp4","Content-Disposition":"inline; filename=\"site-tour.mp4\"","X-Content-Type-Options":"nosniff","Accept-Ranges":"bytes","Cache-Control":"public, max-age=3600","ETag":object.httpEtag,"Content-Length":String(object.size)});
+  if (!range && request.headers.get("If-None-Match") === object.httpEtag) return new Response(null,{status:304,headers});
+  let status = 200;
+  if (range && object.range && "offset" in object.range && "length" in object.range) { const offset = object.range.offset || 0, length = object.range.length || 0; headers.set("Content-Range",`bytes ${offset}-${offset+length-1}/${object.size}`); headers.set("Content-Length",String(length)); status = 206; }
+  return new Response(request.method === "HEAD" ? null : object.body,{status,headers});
+}

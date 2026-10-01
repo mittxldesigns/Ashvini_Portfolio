@@ -1,6 +1,6 @@
 import { authRoute, requireSession, SecretEnv } from "./auth";
 import { contentRoute, published } from "./content";
-import { createMedia, serveMedia, uploadMedia } from "./media";
+import { createMedia, serveMedia, serveSiteTour, uploadMedia } from "./media";
 import { proxy } from "./proxy";
 import { HttpError, json, rateLimit } from "./security";
 
@@ -8,6 +8,7 @@ export default {
   async fetch(request: Request, env: SecretEnv): Promise<Response> {
     try {
       const path = new URL(request.url).pathname;
+      if (path === "/site-tour.mp4" && ["GET","HEAD"].includes(request.method)) return await serveSiteTour(env,request);
       if (path === "/api/portfolio" && request.method === "GET") {
         const content = await published(env);
         // Null explicitly tells the frontend to preserve its bundled seed.

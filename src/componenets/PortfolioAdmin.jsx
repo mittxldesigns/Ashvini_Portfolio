@@ -55,16 +55,19 @@ async function previewBlob(file) {
   } finally { URL.revokeObjectURL(url); }
 }
 
+function consumeSetupFragment() {
+  const value = new URLSearchParams(window.location.hash.slice(1)).get("setup") || "";
+  if (!/^[a-f0-9]{64}$/.test(value)) return "";
+  window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  return value;
+}
+
 export default function PortfolioAdmin({ initialContent = EMPTY }) {
   const [session, setSession] = useState(null), [content, setContent] = useState(initialContent);
   const [revision, setRevision] = useState(0), [publishedRevision, setPublishedRevision] = useState(null);
   const [history, setHistory] = useState([]), [section, setSection] = useState("profile"), [selected, setSelected] = useState(0);
   const [dirty, setDirty] = useState(false), [busy, setBusy] = useState(""), [error, setError] = useState(""), [notice, setNotice] = useState("");
-  const [setupToken, setSetupToken] = useState(() => {
-    const params = new URLSearchParams(window.location.hash.slice(1)); const token = params.get("setup") || "";
-    if (token) window.history.replaceState(null, "", window.location.pathname + window.location.search);
-    return token;
-  });
+  const [setupToken, setSetupToken] = useState(consumeSetupFragment);
   const emailRef = useRef(null), passwordRef = useRef(null), fileRef = useRef(null);
   const request = useCallback(async (path, method = "GET", body, extra = {}) => {
     let response;
@@ -86,6 +89,11 @@ export default function PortfolioAdmin({ initialContent = EMPTY }) {
     const data = await request("/api/admin/content");
     setContent(data.content || initialContent); setRevision(data.revision); setPublishedRevision(data.publishedRevision); setHistory(data.history || []); setDirty(false); setSelected(0);
   }, [request, initialContent]);
+  useEffect(() => {
+    const changed = () => { const value = consumeSetupFragment(); if (value) setSetupToken(value); };
+    window.addEventListener("hashchange", changed);
+    return () => window.removeEventListener("hashchange", changed);
+  }, []);
   useEffect(() => {
     let active = true;
     fetch("/api/auth/session", { credentials: "same-origin" }).then(async (response) => {

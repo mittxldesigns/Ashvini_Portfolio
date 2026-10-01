@@ -4,10 +4,11 @@ The existing portfolio remains the frontend. This separate Cloudflare Worker pro
 
 ## Current state
 
-- Dedicated D1 `ashvini-owner-cms` exists in APAC. Its initial migration contains only new CMS tables and has been applied.
+- Dedicated D1 `ashvini-owner-cms` exists in APAC. Both migrations contain only new CMS tables and have been applied. The complete portfolio seed is published at revision 0: 15 projects, 89 editorial entries and 43 sketches.
 - R2 creation initially returned error 10042. The user then confirmed activation, and the dedicated private bucket `ashvini-portfolio-media` was created successfully. This implementation made no paid plan, subscription, or billing change.
-- `PROXY_ENABLED` is `false`; no production route has been activated. Password setup is disabled because no bootstrap secrets are configured. No owner account/password was created.
-- The API passes local integration tests against real workerd, D1 and R2 emulation. The synthetic browser editor checks cover save/publish, original image bytes, JPEG previews, NSFW flags and mobile scrolling. Staging is deployed on workers.dev; production upload, login CPU accounting, routing and the real owner workflow still require live verification.
+- The proxy is live on the exact `bettercallashvini.com/*` route, with Pages still serving frontend assets. The existing WWW and HTTP redirects were verified and preserved. `/admin` serves the Pages root SPA template without changing the browser's editor path, with no-index, no-archive, no-referrer and frame protection.
+- A fresh one-time bootstrap is configured with a maximum 24-hour expiry. Its raw token is held in macOS Keychain and an explicitly authorized mode-0600 private handoff file outside the repository. No owner account or password was created; the owner chooses and submits their password themselves.
+- All 39 backend integration tests pass against real workerd, D1 and R2 emulation. Synthetic browser editor checks cover save/publish, original image bytes, JPEG previews, NSFW flags and mobile scrolling. Live domain checks cover all core HTML pages, bootstrap/schema, API seed, login rejection, admin security headers, asset caching, sitemap, llms and canonical redirects. Actual owner login/edit/upload/publish still requires the owner's manual password setup. A bounded sanitized tail check did not return CPU timings; repeated live secure-hash probes succeeded.
 
 ## Architecture
 
@@ -36,6 +37,7 @@ Session tokens are 256 random bits; only their SHA256 digest is stored. Cookies 
 | `PUT /api/admin/media/:id/original` | Raw bytes, exact matching MIME and Content-Length. |
 | `PUT /api/admin/media/:id/preview` | Raw JPEG/WebP preview bytes with matching MIME and Content-Length. |
 | `GET /media/:id/original` / `preview` | Published files public; unpublished files require the owner's session. Supports ETag/HEAD/range. |
+| `GET` / `HEAD /site-tour.mp4` | Fixed public R2 artifact with streaming, ranges and ETag; independent of owner content publication. |
 
 Authenticated mutations require `X-CSRF-Token`. Setup and login still require the exact Origin. No cross-origin CORS is enabled.
 
@@ -57,10 +59,10 @@ npm test
 ## Deployment sequence
 
 1. Keep the existing `ashvini-portfolio-media` bucket's public access disabled; only this Worker serves objects.
-2. Validate the full existing portfolio seed and prepare SQL with `node scripts/seed-sql.mjs <seed.json> <scratch-output.sql>`. Apply it with `wrangler d1 execute ashvini-owner-cms --remote --file <scratch-output.sql>`. Seeding cannot overwrite an existing CMS state.
+2. Validate the full existing portfolio seed and prepare SQL with `node scripts/seed-sql.mjs <seed.json> <scratch-output.sql>`. Apply it with `wrangler d1 execute ashvini-owner-cms --remote --file <scratch-output.sql>`. Statements use bounded chunks under D1's SQL size ceiling, then atomically assemble the snapshot. Seeding cannot overwrite an existing CMS state.
 3. Deploy to workers.dev with proxy disabled. Verify public API, unauthorized API, origin guards, static content preservation, media, and logging. Review security before routing production.
 4. Enable the Pages proxy and the exact approved production route. Do not route a production hostname before reviewing its zone/origin configuration and testing the proxy with the complete seed.
-5. Generate a fresh 256-bit bootstrap token in a trusted local process; store it in Keychain, set only its SHA256 digest as `BOOTSTRAP_TOKEN_HASH` and a Unix expiry (at most 24 hours ahead) as `BOOTSTRAP_EXPIRES_AT` through Wrangler secrets. Never print the token or place it in the repo/reports. Privately open `/admin#setup=<token>` for the owner handoff. The owner enters their password themselves.
+5. Generate a fresh 256-bit bootstrap token in a trusted local process; store it in Keychain, set only its SHA256 digest as `BOOTSTRAP_TOKEN_HASH` and a Unix expiry (at most 24 hours ahead) as `BOOTSTRAP_EXPIRES_AT` through Wrangler secrets. Use `WRANGLER_WRITE_LOGS=false` for credential retrieval and secret commands: CLI output can otherwise be persisted in Wrangler's debug logs even when captured. Never print the token or place it in the repo/reports. Privately open `/admin#setup=<token>` for the owner handoff. The owner enters their password themselves.
 6. After setup, the account's unique ID blocks all later setup attempts. Remove the bootstrap configuration in a separately authorized secret-management step. Verify owner login, save, publish, upload and logout manually without reading the password field.
 
 Password recovery/email verification are not automatically configured: no mail sender or outbound email was authorized. Recovery requires a separately reviewed private administrator workflow. This is a tested implementation, not a guarantee that bugs cannot occur.

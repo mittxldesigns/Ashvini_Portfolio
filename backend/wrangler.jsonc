@@ -5,11 +5,12 @@
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
+  "routes": [{ "pattern": "bettercallashvini.com/*", "zone_id": "9caba8a39454b24e1b7e7761d24232e9" }],
   "vars": {
     "OWNER_EMAIL": "kumarak9335@gmail.com",
     "PAGES_ORIGIN": "https://ashvini-portfolio.pages.dev",
     "SITE_ORIGIN": "https://bettercallashvini.com",
-    "PROXY_ENABLED": "false"
+    "PROXY_ENABLED": "true"
   },
   "d1_databases": [{
     "binding": "DB",
