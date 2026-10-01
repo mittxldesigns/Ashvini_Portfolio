@@ -4,6 +4,7 @@ import HeaderNav from "./HeaderNav.jsx";
 import TransitionLink from "./TransitionLink.jsx";
 import { CONTRA_PROFILE } from "../data/projects.js";
 import { SKETCH_CHAPTERS, SKETCH_TIMELINE, sketches } from "../data/sketches.js";
+import SketchPaper from "./SketchPaper.jsx";
 import { isViewTransitionRunning } from "../lib/viewTransition.js";
 
 // The artist side, built like a sketchbook rather than a website: pencil on paper,
@@ -185,30 +186,7 @@ function Sketches() {
       <HeaderNav />
       {intro && <Intro onDone={endIntro} />}
       <div className={`sk-page ${intro ? "is-waiting" : "is-live"}`} ref={pageRef}>
-        <svg className="sk-paper" aria-hidden="true">
-          <defs>
-            <filter id="sk-wobble" x="0" y="0" width="100%" height="100%">
-              <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="11" result="n" />
-              <feDisplacementMap in="SourceGraphic" in2="n" scale="4" />
-            </filter>
-            <filter id="sk-rough">
-              <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="4" result="n" />
-              <feDisplacementMap in="SourceGraphic" in2="n" scale="3.4" />
-            </filter>
-            <filter id="sk-grain">
-              <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" seed="2" />
-              <feColorMatrix values="0 0 0 0 0.4  0 0 0 0 0.38  0 0 0 0 0.35  0 0 0 0.07 0" />
-            </filter>
-            <filter id="sk-smudge"><feGaussianBlur stdDeviation="28" /></filter>
-            <pattern id="sk-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M40 0 L0 0 0 40" fill="none" stroke="#8b929b" strokeWidth="0.6" strokeOpacity="0.26" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#sk-grid)" filter="url(#sk-wobble)" />
-          <ellipse cx="82%" cy="18%" rx="180" ry="90" fill="#9aa0a6" opacity="0.045" filter="url(#sk-smudge)" />
-          <ellipse cx="12%" cy="78%" rx="220" ry="110" fill="#9aa0a6" opacity="0.04" filter="url(#sk-smudge)" />
-          <rect width="100%" height="100%" filter="url(#sk-grain)" />
-        </svg>
+        <SketchPaper />
         <div className="sk-margin" aria-hidden="true" />
 
         {/* ---------- hero ---------- */}
