@@ -3431,7 +3431,7 @@ html[data-vt="swap"]::view-transition-old(root) {
 }
 @media (prefers-reduced-motion: reduce) { .ed-pub-proof img { transition: none; } }
 
-@media (max-width: 600px) { .headernav--editorial { background: linear-gradient(#0e0e0e 90%, rgba(14, 14, 14, 0)); } }
+@media (max-width: 600px) { .headernav:not(.headernav--paper) { background: linear-gradient(#0e0e0e 90%, rgba(14, 14, 14, 0)); } }
 
 /* Phone chapter tabs sit beneath the header, on one opaque strip of paper. */
 @media (max-width: 600px) {
