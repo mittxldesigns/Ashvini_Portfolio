@@ -5,42 +5,119 @@ import TransitionLink from "./TransitionLink.jsx";
 import { CONTRA_PROFILE } from "../data/projects.js";
 import { SKETCH_CHAPTERS, SKETCH_TIMELINE, sketches } from "../data/sketches.js";
 
-// The artist side: a separate visual world from the dark 3D/editorial site.
-// Paper, a pencil-drawn grid, drafting sheets with title blocks, and doodles that draw themselves.
+// The artist side, built like a sketchbook rather than a website: pencil on paper,
+// headlines pasted in from magazine cutouts, notes in his handwriting.
 
-const FONT_HREF =
-  "https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap";
+const FONT_HREF = "https://fonts.googleapis.com/css2?family=Reenie+Beanie&family=Courier+Prime:wght@400;700&display=swap";
+const letters = import.meta.glob("../assets/cutout/*.webp", { eager: true, import: "default" });
+const letterSrc = (ch) => letters[`../assets/cutout/${/\d/.test(ch) ? "d" + ch : ch.toUpperCase()}.webp`];
 const bySlug = (slug) => sketches.find((s) => s.slug === slug);
-const tilt = (i) => [-1.4, 0.9, -0.6, 1.3, -1.1, 0.5, 1.6, -0.8][i % 8];
+// deterministic "random" so letters and sheets sit the same way on every visit
+const jitter = (seed, spread) => (((Math.sin(seed * 999.7) + 1) / 2) * 2 - 1) * spread;
 
-/* A pencil stroke that draws itself when its section scrolls into view (pathLength=1 trick). */
-function Stroke({ d, w = 2, delay = 0, className = "" }) {
-  return <path className={`sk-stroke ${className}`} d={d} pathLength="1" strokeWidth={w} style={{ "--sd": `${delay}ms` }} />;
+/* Words pasted in from magazine cutouts, one letter at a time. */
+function Cutout({ text, size = 1, seed = 1, className = "", delay = 0 }) {
+  let n = 0;
+  return (
+    <span className={`cut ${className}`} style={{ "--cut": size }} role="img" aria-label={text}>
+      {text.split(" ").map((word, w) => (
+        <span className="cut-word" key={w} aria-hidden="true">
+          {word.split("").map((ch) => {
+            const i = n++;
+            const src = letterSrc(ch);
+            if (!src) return <span key={i} className="cut-gap" />;
+            return (
+              <img
+                key={i}
+                src={src}
+                alt=""
+                className="cut-l"
+                draggable="false"
+                style={{
+                  "--r": `${jitter(seed + i, 7)}deg`,
+                  "--y": `${jitter(seed + i * 3, 0.07)}em`,
+                  "--s": 0.86 + ((jitter(seed + i * 7, 1) + 1) / 2) * 0.28,
+                  "--i": i,
+                  "--cd": `${delay}ms`,
+                }}
+              />
+            );
+          })}
+        </span>
+      ))}
+    </span>
+  );
 }
 
-const Doodles = {
-  underline: "M4 14 C 60 6, 120 18, 180 9 S 280 12, 316 7",
-  circle: "M150 8 C 60 2, 6 30, 14 58 C 24 92, 150 104, 246 86 C 318 72, 312 22, 238 10 C 196 3, 160 6, 120 14",
-  arrowCurve: "M6 70 C 40 20, 110 6, 168 30",
-  arrowHead: "M150 14 L 170 31 L 146 40",
+/* A pencil line that draws itself once its section is in view. */
+function Line({ d, w = 1.6, delay = 0, className = "" }) {
+  return <path className={`pl ${className}`} d={d} pathLength="1" strokeWidth={w} style={{ "--pd": `${delay}ms` }} />;
+}
+
+const D = {
+  frame: "M10 12 C 160 6, 420 14, 590 9 M 588 6 C 594 120, 586 260, 592 392 M 594 390 C 420 396, 180 388, 8 394 M 12 398 C 6 260, 14 120, 9 8",
+  hatch: Array.from({ length: 14 }, (_, i) => `M${i * 12} 60 L ${i * 12 + 40} 0`).join(" "),
+  arrow: "M4 60 C 30 18, 90 6, 140 26 M 124 12 L 142 27 L 120 36",
+  loop: "M6 30 C 30 2, 60 2, 52 26 C 44 50, 14 40, 30 22 C 46 6, 90 14, 120 30",
   star: "M30 4 L 37 24 L 58 24 L 41 37 L 48 58 L 30 45 L 12 58 L 19 37 L 2 24 L 23 24 Z",
-  spiral: "M40 40 m -4 0 a 4 4 0 1 1 8 0 a 8 8 0 1 1 -16 0 a 13 13 0 1 1 26 0 a 18 18 0 1 1 -36 0 a 23 23 0 1 1 46 0",
-  squiggle: "M2 20 q 10 -18 20 0 t 20 0 t 20 0 t 20 0 t 20 0",
-  cross: "M4 4 L 20 20 M 20 4 L 4 20",
-  pencilBody: "M8 92 L 70 30 L 86 46 L 24 108 Z",
-  pencilTip: "M8 92 L 2 114 L 24 108",
-  pencilBand: "M62 38 L 78 54",
-  pencilEraser: "M70 30 L 80 20 Q 86 14 92 20 L 96 24 Q 102 30 96 36 L 86 46",
-  pencilLine: "M2 114 C 60 120, 140 104, 230 116 S 360 110, 420 118",
+  underline: "M2 10 C 50 4, 110 14, 170 7 S 260 11, 300 6",
+  scribble: "M4 20 C 20 4, 30 36, 46 18 S 70 4, 84 22 S 108 34, 122 14",
+  pencil: "M10 90 L 66 34 L 82 50 L 26 106 Z M10 90 L 4 112 L 26 106 M58 42 L 74 58 M66 34 L 76 24 Q 82 18 88 24 L 92 28 Q 98 34 92 40 L 82 50",
 };
+
+/* One-time intro: the grid sketches in, a frame gets roughed out, the title gets pasted down, page turns. */
+function Intro({ onDone }) {
+  const [phase, setPhase] = useState("draw");
+  useEffect(() => {
+    const t1 = setTimeout(() => setPhase("turn"), 2300);
+    const t2 = setTimeout(onDone, 3100);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [onDone]);
+  return (
+    <div className={`sk-intro is-${phase}`} onClick={onDone} role="presentation">
+      <svg className="sk-intro-grid" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <filter id="sk-intro-wobble"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="5" result="n" /><feDisplacementMap in="SourceGraphic" in2="n" scale="5" /></filter>
+        </defs>
+        <g filter="url(#sk-intro-wobble)">
+        {Array.from({ length: 9 }, (_, i) => (
+          <Line key={`h${i}`} d={`M0 ${60 + i * 60} C 300 ${58 + i * 60 + jitter(i, 3)}, 700 ${62 + i * 60}, 1000 ${60 + i * 60 + jitter(i + 9, 3)}`} w={0.8} delay={i * 45} />
+        ))}
+        {Array.from({ length: 16 }, (_, i) => (
+          <Line key={`v${i}`} d={`M${60 + i * 60} 0 C ${58 + i * 60 + jitter(i, 3)} 250, ${62 + i * 60} 400, ${60 + i * 60} 600`} w={0.8} delay={120 + i * 30} />
+        ))}
+        </g>
+      </svg>
+      <div className="sk-intro-center">
+        <svg className="sk-intro-frame" viewBox="0 0 600 400" preserveAspectRatio="none" aria-hidden="true">
+          <Line d={D.frame} w={2.2} delay={500} />
+          <g className="sk-intro-hatch"><Line d={D.hatch} w={1} delay={1300} /></g>
+        </svg>
+        <Cutout text="SKETCHBOOK" size={1.25} seed={3} className="sk-intro-word" delay={900} />
+        <p className="sk-pencil-hand sk-intro-sign">ashvini · since 2017</p>
+      </div>
+      <span className="sk-intro-skip">tap to skip</span>
+    </div>
+  );
+}
 
 function Sketches() {
   const [params] = useSearchParams();
   const pageRef = useRef(null);
   const dialogRef = useRef(null);
-  const [open, setOpen] = useState(null); // { list, index }
+  const [open, setOpen] = useState(null);
+  const [intro, setIntro] = useState(() => {
+    try {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
+      if (sessionStorage.getItem("sk-intro-seen")) return false;
+    } catch { /* storage off: just play it */ }
+    return true;
+  });
+  const endIntro = useCallback(() => {
+    setIntro(false);
+    try { sessionStorage.setItem("sk-intro-seen", "1"); } catch { /* fine */ }
+  }, []);
 
-  // fonts for this page only
   useEffect(() => {
     if (document.querySelector(`link[href="${FONT_HREF}"]`)) return;
     const link = document.createElement("link");
@@ -49,28 +126,26 @@ function Sketches() {
     document.head.appendChild(link);
   }, []);
 
-  // draw doodles / reveal sheets as sections enter the viewport
   useEffect(() => {
     const root = pageRef.current;
-    if (!root) return undefined;
+    if (!root || intro) return undefined;
     const targets = root.querySelectorAll(".sk-anim");
     if (!("IntersectionObserver" in window)) { targets.forEach((el) => el.classList.add("is-in")); return undefined; }
     const io = new IntersectionObserver(
       (entries) => entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("is-in"); io.unobserve(e.target); } }),
-      { root, threshold: 0.15 },
+      { root, threshold: 0.12 },
     );
     targets.forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, []);
+  }, [intro]);
 
-  // deep link: /sketches?type=paper
   useEffect(() => {
     const type = params.get("type");
     const target = type && pageRef.current?.querySelector(`#sk-${CSS.escape(type)}`);
-    if (!target) return undefined;
+    if (!target || intro) return undefined;
     const timer = setTimeout(() => target.scrollIntoView({ block: "start" }), 60);
     return () => clearTimeout(timer);
-  }, [params]);
+  }, [params, intro]);
 
   const item = open ? open.list[open.index] : null;
   const close = useCallback(() => setOpen(null), []);
@@ -93,109 +168,95 @@ function Sketches() {
   const scrollTo = (id) => pageRef.current?.querySelector(`#${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   const hero = bySlug("batman-part-ii-akira");
   const sheetNo = (s) => String(s.id).padStart(2, "0");
+  const chapterWord = { posters: "POSTERS", characters: "CHARACTERS", paper: "ON PAPER", portraits: "FACES" };
+  const chapterNote = {
+    posters: "posters for films i'd queue up for",
+    characters: "stills i paused on and couldn't let go of",
+    paper: "pencil, ink, eraser crumbs · 2017 to 2020",
+    portraits: "people. me, once.",
+  };
 
   return (
     <>
       <HeaderNav />
-      <div className="sk-page" ref={pageRef}>
-        {/* paper: grain + a grid drawn in pencil (the displacement filter makes every line wobble) */}
+      {intro && <Intro onDone={endIntro} />}
+      <div className={`sk-page ${intro ? "is-waiting" : "is-live"}`} ref={pageRef}>
         <svg className="sk-paper" aria-hidden="true">
           <defs>
-            <filter id="sk-pencil" x="0" y="0" width="100%" height="100%">
-              <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7" result="n" />
-              <feDisplacementMap in="SourceGraphic" in2="n" scale="3.2" />
+            <filter id="sk-wobble" x="0" y="0" width="100%" height="100%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="11" result="n" />
+              <feDisplacementMap in="SourceGraphic" in2="n" scale="4" />
+            </filter>
+            <filter id="sk-rough">
+              <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="4" result="n" />
+              <feDisplacementMap in="SourceGraphic" in2="n" scale="3.4" />
             </filter>
             <filter id="sk-grain">
-              <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" seed="3" />
-              <feColorMatrix values="0 0 0 0 0.35  0 0 0 0 0.33  0 0 0 0 0.3  0 0 0 0.09 0" />
+              <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" seed="2" />
+              <feColorMatrix values="0 0 0 0 0.4  0 0 0 0 0.38  0 0 0 0 0.35  0 0 0 0.07 0" />
             </filter>
-            <pattern id="sk-grid" width="36" height="36" patternUnits="userSpaceOnUse">
-              <path d="M36 0 L0 0 0 36" fill="none" stroke="#7d8692" strokeWidth="0.7" strokeOpacity="0.32" />
-            </pattern>
-            <pattern id="sk-grid-major" width="180" height="180" patternUnits="userSpaceOnUse">
-              <path d="M180 0 L0 0 0 180" fill="none" stroke="#5f6874" strokeWidth="1.1" strokeOpacity="0.28" />
+            <filter id="sk-smudge"><feGaussianBlur stdDeviation="28" /></filter>
+            <pattern id="sk-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M40 0 L0 0 0 40" fill="none" stroke="#8b929b" strokeWidth="0.6" strokeOpacity="0.26" />
             </pattern>
           </defs>
-          <rect width="100%" height="100%" fill="url(#sk-grid)" filter="url(#sk-pencil)" />
-          <rect width="100%" height="100%" fill="url(#sk-grid-major)" filter="url(#sk-pencil)" />
+          <rect width="100%" height="100%" fill="url(#sk-grid)" filter="url(#sk-wobble)" />
+          <ellipse cx="82%" cy="18%" rx="180" ry="90" fill="#9aa0a6" opacity="0.045" filter="url(#sk-smudge)" />
+          <ellipse cx="12%" cy="78%" rx="220" ry="110" fill="#9aa0a6" opacity="0.04" filter="url(#sk-smudge)" />
           <rect width="100%" height="100%" filter="url(#sk-grain)" />
         </svg>
-        <div className="sk-ruler" aria-hidden="true" />
         <div className="sk-margin" aria-hidden="true" />
 
         {/* ---------- hero ---------- */}
         <section className="sk-hero sk-anim" aria-labelledby="sk-title">
           <div className="sk-hero-copy">
-            <p className="sk-hand sk-kicker">the artist side of Ashvini Kumar</p>
-            <h1 id="sk-title" className="sk-serif">
-              <span className="sk-mark">
-                Pencil
-                <svg className="sk-under" viewBox="0 0 320 24" preserveAspectRatio="none" aria-hidden="true"><Stroke d={Doodles.underline} w={3.2} delay={500} /></svg>
-              </span>{" "}
-              first.
-              <br />
-              <span className="sk-mark">
-                <em>Pixels</em>
-                <svg className="sk-ring" viewBox="0 0 320 110" preserveAspectRatio="none" aria-hidden="true"><Stroke d={Doodles.circle} w={2.4} delay={900} /></svg>
-              </span>{" "}
-              later.
+            <p className="sk-pencil-hand sk-kicker">the stuff I draw for myself (and sometimes for money)</p>
+            <h1 id="sk-title" className="sk-h1">
+              <Cutout text="SKETCHBOOK" size={1} seed={3} delay={150} />
             </h1>
-            <p className="sk-lede">
-              Before the 3D and the newsroom work, there was a sketchbook. I started with graphite fan art
-              back in school, took paid ink commissions by 2020, and these days I paint the film posters and
-              characters I can't stop thinking about.
+            <svg className="sk-h1-under" viewBox="0 0 300 16" preserveAspectRatio="none" aria-hidden="true"><Line d={D.underline} w={2} delay={900} /></svg>
+            <p className="sk-type sk-lede">
+              Started with a Deadpool sketch in 2017 and never really stopped. Graphite first, then ink
+              covers people actually paid for, and these days mostly Photoshop, one movie still at a time.
             </p>
             <div className="sk-actions">
-              <button type="button" className="sk-btn sk-btn-ink" onClick={() => scrollTo("sk-posters")}>Open the sketchbook ↓</button>
-              <a className="sk-btn" href={CONTRA_PROFILE} target="_blank" rel="noreferrer">Commission a piece ↗</a>
+              <button type="button" className="sk-btn" onClick={() => scrollTo("sk-posters")}>flip through ↓</button>
+              <a className="sk-btn sk-btn-alt" href={CONTRA_PROFILE} target="_blank" rel="noreferrer">commission a piece ↗</a>
             </div>
-            <dl className="sk-stamps">
-              <div><dt>2017</dt><dd>first posted sketch</dd></div>
-              <div><dt>169</dt><dd>posts on Instagram</dd></div>
-              <div><dt>Photoshop · graphite · ink</dt><dd>tools</dd></div>
-            </dl>
+            <ul className="sk-margin-notes sk-pencil-hand" aria-label="Quick facts">
+              <li>2017: first sketch (Deadpool, obviously)</li>
+              <li>2018: 16 hours on one Venom</li>
+              <li>2020: first paid ink covers</li>
+            </ul>
           </div>
 
-          <figure className="sk-hero-sheet" style={{ "--tilt": "2.2deg" }}>
-            <span className="sk-tape sk-tape-tl" /><span className="sk-tape sk-tape-br" />
-            <button type="button" className="sk-sheet-img" onClick={() => setOpen({ list: sketches, index: hero.id - 1 })} aria-label={`Open ${hero.title}`}>
+          <figure className="sk-pin sk-hero-pin" style={{ "--t": "3deg" }}>
+            <span className="sk-tape" style={{ "--tr": "-28deg", left: "-20px", top: "-12px" }} />
+            <span className="sk-tape" style={{ "--tr": "34deg", right: "-22px", top: "-10px" }} />
+            <button type="button" className="sk-pin-img" onClick={() => setOpen({ list: sketches, index: hero.id - 1 })} aria-label={`Open ${hero.title}`}>
               <picture>
                 <source srcSet={hero.thumbAvif} type="image/avif" />
                 <img src={hero.thumbWebp} alt={`${hero.title}, ${hero.medium}, ${hero.year}, by Ashvini Kumar`} />
               </picture>
             </button>
-            <figcaption className="sk-titleblock">
-              <span><b>SHEET</b>{sheetNo(hero)}</span><span><b>TITLE</b>{hero.title}</span><span><b>YEAR</b>{hero.year}</span>
-            </figcaption>
-            <p className="sk-hand sk-note sk-note-hero">latest piece!</p>
-            <svg className="sk-arrow sk-arrow-hero" viewBox="0 0 180 80" aria-hidden="true">
-              <Stroke d={Doodles.arrowCurve} delay={1400} /><Stroke d={Doodles.arrowHead} delay={1900} />
-            </svg>
+            <figcaption className="sk-pencil-hand sk-pin-cap">{hero.title.toLowerCase()} · {hero.year}</figcaption>
+            <p className="sk-pencil-hand sk-callout">newest one ↓</p>
+            <svg className="sk-callout-loop" viewBox="0 0 130 50" aria-hidden="true"><Line d={D.loop} w={1.6} delay={1200} /></svg>
           </figure>
 
-          {/* the pencil drawing its own line */}
-          <svg className="sk-pencil" viewBox="0 0 430 124" aria-hidden="true">
-            <Stroke d={Doodles.pencilLine} w={2} delay={200} className="sk-graphite" />
-            <g className="sk-pencil-body">
-              <Stroke d={Doodles.pencilBody} w={2.2} delay={300} />
-              <Stroke d={Doodles.pencilTip} w={2.2} delay={500} />
-              <Stroke d={Doodles.pencilBand} w={2.2} delay={600} />
-              <Stroke d={Doodles.pencilEraser} w={2.2} delay={700} />
-            </g>
-          </svg>
-          <svg className="sk-doodle sk-star" viewBox="0 0 60 60" aria-hidden="true"><Stroke d={Doodles.star} delay={1100} /></svg>
-          <svg className="sk-doodle sk-spiral" viewBox="0 0 80 80" aria-hidden="true"><Stroke d={Doodles.spiral} delay={1300} /></svg>
-          <svg className="sk-doodle sk-x" viewBox="0 0 24 24" aria-hidden="true"><Stroke d={Doodles.cross} delay={1500} /></svg>
+          <svg className="sk-doodle sk-d-pencil" viewBox="0 0 100 116" aria-hidden="true"><Line d={D.pencil} w={1.6} delay={600} /></svg>
+          <svg className="sk-doodle sk-d-star" viewBox="0 0 60 60" aria-hidden="true"><Line d={D.star} w={1.4} delay={1400} /></svg>
+          <svg className="sk-doodle sk-d-hatch" viewBox="0 0 170 60" aria-hidden="true"><Line d={D.hatch} w={0.9} delay={800} /></svg>
         </section>
 
-        {/* ---------- index tabs ---------- */}
+        {/* ---------- tabs ---------- */}
         <nav className="sk-tabs" aria-label="Sketchbook sections">
           {SKETCH_CHAPTERS.map((c, i) => (
-            <button key={c.id} type="button" onClick={() => scrollTo(`sk-${c.id}`)} style={{ "--tilt": `${tilt(i) * 0.6}deg` }}>
-              <span className="sk-hand">0{i + 1}</span> {c.label}
+            <button key={c.id} type="button" onClick={() => scrollTo(`sk-${c.id}`)} style={{ "--t": `${jitter(i + 2, 1.4)}deg` }}>
+              {chapterWord[c.id].toLowerCase()}
             </button>
           ))}
-          <button type="button" onClick={() => scrollTo("sk-journey")} style={{ "--tilt": "-0.5deg" }}><span className="sk-hand">→</span> The journey</button>
+          <button type="button" onClick={() => scrollTo("sk-journey")} style={{ "--t": "1deg" }}>how it started</button>
         </nav>
 
         {/* ---------- chapters ---------- */}
@@ -204,31 +265,23 @@ function Sketches() {
           return (
             <section className="sk-chapter sk-anim" id={`sk-${c.id}`} key={c.id} aria-labelledby={`sk-h-${c.id}`}>
               <header className="sk-chapter-head">
-                <span className="sk-num sk-hand">
-                  0{ci + 1}
-                  <svg viewBox="0 0 320 110" preserveAspectRatio="none" aria-hidden="true"><Stroke d={Doodles.circle} w={2} delay={200} /></svg>
-                </span>
-                <div>
-                  <h2 id={`sk-h-${c.id}`} className="sk-serif">{c.label}</h2>
-                  <p className="sk-hand sk-blurb">{c.blurb}</p>
-                </div>
-                <svg className="sk-squiggle" viewBox="0 0 104 30" aria-hidden="true"><Stroke d={Doodles.squiggle} delay={500} /></svg>
+                <h2 id={`sk-h-${c.id}`} className="sk-h2"><Cutout text={chapterWord[c.id]} size={0.62} seed={ci * 13 + 5} /></h2>
+                <p className="sk-pencil-hand sk-chapter-note">{chapterNote[c.id]}</p>
+                <svg className="sk-chapter-scribble" viewBox="0 0 126 40" aria-hidden="true"><Line d={D.scribble} w={1.4} delay={400} /></svg>
               </header>
-              <div className={`sk-sheets sk-sheets-${c.id}`}>
+              <div className={`sk-board sk-board-${c.id}`}>
                 {list.map((s, i) => (
-                  <figure className="sk-sheet" key={s.slug} style={{ "--tilt": `${tilt(i + ci)}deg`, "--d": `${Math.min(i, 8) * 70}ms` }}>
-                    <span className={`sk-tape ${i % 2 ? "sk-tape-tr" : "sk-tape-tl"}`} />
-                    <button type="button" className="sk-sheet-img" onClick={() => setOpen({ list, index: i })} aria-label={`Open ${s.title}`}>
+                  <figure className="sk-pin" key={s.slug} style={{ "--t": `${jitter(i + ci * 7, 1.8)}deg`, "--d": `${Math.min(i, 8) * 70}ms` }}>
+                    <span className="sk-tape" style={{ "--tr": `${i % 2 ? 30 : -30}deg`, [i % 2 ? "right" : "left"]: "-18px", top: "-12px" }} />
+                    <button type="button" className="sk-pin-img" onClick={() => setOpen({ list, index: i })} aria-label={`Open ${s.title}`}>
                       <picture>
                         <source srcSet={s.thumbAvif} type="image/avif" />
                         <img src={s.thumbWebp} alt={`${s.title}, ${s.medium}, ${s.year}, by Ashvini Kumar`} loading="lazy" decoding="async" />
                       </picture>
                     </button>
-                    <figcaption className="sk-titleblock">
-                      <span><b>SHEET</b>{sheetNo(s)}/{String(sketches.length).padStart(2, "0")}</span>
-                      <span className="sk-tb-title"><b>TITLE</b>{s.title}</span>
-                      <span><b>MEDIUM</b>{s.medium}</span>
-                      <span><b>YEAR</b>{s.year}</span>
+                    <figcaption>
+                      <span className="sk-pencil-hand sk-pin-cap">{s.title.toLowerCase()}</span>
+                      <span className="sk-type sk-pin-meta">no.{sheetNo(s)} · {s.medium.toLowerCase()} · {s.year}</span>
                     </figcaption>
                   </figure>
                 ))}
@@ -237,24 +290,23 @@ function Sketches() {
           );
         })}
 
-        {/* ---------- journey ---------- */}
+        {/* ---------- how it started ---------- */}
         <section className="sk-journey sk-anim" id="sk-journey" aria-labelledby="sk-journey-title">
-          <h2 id="sk-journey-title" className="sk-serif">From graphite to Photoshop</h2>
-          <p className="sk-hand sk-blurb">since 2017, one sketchbook at a time</p>
+          <h2 id="sk-journey-title" className="sk-h2"><Cutout text="HOW IT STARTED" size={0.5} seed={41} /></h2>
           <ol className="sk-line">
             <svg className="sk-line-draw" viewBox="0 0 1000 40" preserveAspectRatio="none" aria-hidden="true">
-              <Stroke d="M4 22 C 120 10, 220 32, 340 20 S 560 12, 680 24 S 880 30, 996 18" w={2.2} delay={200} />
+              <Line d="M4 22 C 120 10, 220 32, 340 20 S 560 12, 680 24 S 880 30, 996 18" w={1.6} delay={200} />
             </svg>
             {SKETCH_TIMELINE.map((t, i) => {
               const s = bySlug(t.slug);
               return (
-                <li key={t.year} style={{ "--d": `${300 + i * 220}ms`, "--tilt": `${tilt(i) * 1.6}deg` }}>
+                <li key={t.year} style={{ "--d": `${300 + i * 200}ms`, "--t": `${jitter(i + 30, 3)}deg` }}>
                   <span className="sk-dot" />
-                  <span className="sk-year sk-hand">{t.year}</span>
-                  <button type="button" className="sk-polaroid" onClick={() => setOpen({ list: sketches, index: s.id - 1 })} aria-label={`Open ${s.title}`}>
+                  <span className="sk-pencil-hand sk-year">{t.year}</span>
+                  <button type="button" className="sk-scrap" onClick={() => setOpen({ list: sketches, index: s.id - 1 })} aria-label={`Open ${s.title}`}>
                     <img src={s.thumbWebp} alt={`${s.title} (${t.year})`} loading="lazy" />
                   </button>
-                  <span className="sk-hand sk-tnote">{t.note}</span>
+                  <span className="sk-pencil-hand sk-tnote">{t.note}</span>
                 </li>
               );
             })}
@@ -263,16 +315,16 @@ function Sketches() {
 
         {/* ---------- closing ---------- */}
         <section className="sk-close sk-anim">
-          <svg className="sk-doodle sk-close-star" viewBox="0 0 60 60" aria-hidden="true"><Stroke d={Doodles.star} delay={200} /></svg>
-          <h2 className="sk-serif">Want something drawn?</h2>
-          <p className="sk-lede">Posters, covers, portraits and character art. I take commissions, and I'm on Instagram most days.</p>
+          <h2 className="sk-h2"><Cutout text="WANT ONE" size={0.7} seed={57} /></h2>
+          <p className="sk-pencil-hand sk-close-note">posters, covers, portraits, your favourite character. dm is open.</p>
           <div className="sk-actions sk-actions-center">
-            <a className="sk-btn sk-btn-ink" href={CONTRA_PROFILE} target="_blank" rel="noreferrer">Commission a piece ↗</a>
-            <a className="sk-btn" href="https://instagram.com/ashvini_kmr" target="_blank" rel="noreferrer">@ashvini_kmr on Instagram ↗</a>
+            <a className="sk-btn" href={CONTRA_PROFILE} target="_blank" rel="noreferrer">commission a piece ↗</a>
+            <a className="sk-btn sk-btn-alt" href="https://instagram.com/ashvini_kmr" target="_blank" rel="noreferrer">@ashvini_kmr ↗</a>
           </div>
-          <p className="sk-hand sk-other">
-            the other sides: <TransitionLink to="/portfolio">3D &amp; Web3D</TransitionLink> · <TransitionLink to="/editorial">social &amp; editorial</TransitionLink>
+          <p className="sk-type sk-other">
+            other sides of me: <TransitionLink to="/portfolio">3d &amp; web3d</TransitionLink> · <TransitionLink to="/editorial">social &amp; editorial</TransitionLink>
           </p>
+          <svg className="sk-doodle sk-d-arrow" viewBox="0 0 150 70" aria-hidden="true"><Line d={D.arrow} w={1.6} delay={300} /></svg>
         </section>
       </div>
 
@@ -287,14 +339,14 @@ function Sketches() {
           <div className="sk-lightbox-inner">
             <img src={item.full} alt={`${item.title}, ${item.medium}, ${item.year}, by Ashvini Kumar`} />
             <div className="sk-lightbox-copy">
-              <span className="sk-hand">sheet {sheetNo(item)}</span>
-              <h2 className="sk-serif">{item.title}</h2>
-              <p>{item.note}</p>
-              <p className="sk-mono">{item.medium} · {item.year}</p>
-              <a href={item.url} target="_blank" rel="noreferrer">See it on Instagram ↗</a>
+              <span className="sk-type">no.{sheetNo(item)} · {item.year}</span>
+              <h2 className="sk-pencil-hand">{item.title.toLowerCase()}</h2>
+              <p className="sk-type">{item.note}</p>
+              <p className="sk-type sk-lb-medium">{item.medium}</p>
+              <a className="sk-type" href={item.url} target="_blank" rel="noreferrer">on instagram ↗</a>
               <div className="sk-lightbox-nav">
                 <button type="button" onClick={() => step(-1)} aria-label="Previous">←</button>
-                <span className="sk-mono">{open.index + 1} / {open.list.length}</span>
+                <span className="sk-type">{open.index + 1} / {open.list.length}</span>
                 <button type="button" onClick={() => step(1)} aria-label="Next">→</button>
               </div>
             </div>
