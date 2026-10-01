@@ -4,6 +4,7 @@ import HeaderNav from "./HeaderNav.jsx";
 import TransitionLink from "./TransitionLink.jsx";
 import { CONTRA_PROFILE, projects } from "../data/projects.js";
 import { EDITORIAL_CATEGORIES, editorialPosts } from "../data/editorial.js";
+import { AUDIENCE_CHECKED, COMBINED_FOLLOWERS, publishers } from "../data/experience.js";
 
 const byCategory = (id) => editorialPosts.filter((p) => p.category === id);
 // a few 3D pieces to show the other half of the work, linking into the grid
@@ -128,9 +129,42 @@ function Editorial() {
           <dl className="ed-stats reveal" style={{ "--d": "320ms" }}>
             <div><dt>6 yrs</dt><dd>designing for the feed</dd></div>
             <div><dt>Daily</dt><dd>posts, on deadline</dd></div>
-            <div><dt>2</dt><dd>pop-culture publishers</dd></div>
+            <div><dt>{COMBINED_FOLLOWERS}</dt><dd>followers across the two publishers</dd></div>
             <div><dt>+ 3D</dt><dd><TransitionLink to="/portfolio">and Web3D work too →</TransitionLink></dd></div>
           </dl>
+        </section>
+
+        {/* ---------- credibility: where the work runs ---------- */}
+        <section className="ed-pubs ed-appear" aria-labelledby="ed-pubs-title">
+          <div className="ed-pubs-head">
+            <span className="ed-num">Where my work runs</span>
+            <h2 id="ed-pubs-title">
+              My work goes out to {COMBINED_FOLLOWERS} followers, every day.
+              <span> Two pop-culture publishers, six years, and I'm still on both teams.</span>
+            </h2>
+          </div>
+          <div className="ed-pubs-grid">
+            {publishers.map((p) => (
+              <article className="ed-pub" key={p.org}>
+                <header>
+                  <h3>{p.org}</h3>
+                  <p className="ed-pub-role">{p.role} <span>· {p.years}</span></p>
+                </header>
+                <p className="ed-pub-about">{p.about} {p.work}</p>
+                <dl className="ed-pub-stats">
+                  {p.stats.map((st) => (
+                    <div key={st.label}>
+                      <dt>{st.value}</dt>
+                      <dd>
+                        {st.url ? <a href={st.url} target="_blank" rel="noreferrer">{st.label} ↗</a> : st.label}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </article>
+            ))}
+          </div>
+          <p className="ed-pubs-note">Follower counts from each publisher's public Facebook and Instagram pages, {AUDIENCE_CHECKED}.</p>
         </section>
 
         {/* ---------- chapter index ---------- */}

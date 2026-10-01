@@ -1,6 +1,7 @@
 import HeaderNav from "./HeaderNav.jsx";
 import TransitionLink from "./TransitionLink.jsx";
 import { caseStudies, projects } from "../data/projects.js";
+import { timeline } from "../data/experience.js";
 
 const batla = "/avatar.webp";
 
@@ -49,6 +50,21 @@ function About() {
               <strong>Six years of covers, thumbnails and posts for pop-culture publishers.</strong>
               <em>FandomWire · Animated Times →</em>
             </TransitionLink>
+          </div>
+
+          <div className="about-experience">
+            <h2>Experience</h2>
+            <ol>
+              {timeline.map((t) => (
+                <li key={t.org + t.years} className={`about-exp-${t.side}`}>
+                  <span className="about-exp-years">{t.years}</span>
+                  <div>
+                    <strong>{t.role}</strong> <span className="about-exp-org">· {t.org}</span>
+                    {t.note && <p>{t.note}</p>}
+                  </div>
+                </li>
+              ))}
+            </ol>
           </div>
 
           <div className="about-skills">

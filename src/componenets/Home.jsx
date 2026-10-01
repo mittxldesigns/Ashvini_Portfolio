@@ -119,6 +119,9 @@ function Home() {
               Social &amp; editorial work
             </TransitionLink>
           </div>
+          <p className="home-cred">
+            Senior Designer at Animated Times · Designer at FandomWire · Top 1% Spline expert on Contra
+          </p>
           <a className="home-contact" href={CONTRA_PROFILE} target="_blank" rel="noreferrer">
             Start a project <span aria-hidden="true">↗</span>
           </a>
