@@ -5,7 +5,11 @@ import TransitionLink from "./TransitionLink.jsx";
 import { CONTRA_PROFILE } from "../data/projects.js";
 import { SKETCH_CHAPTERS, SKETCH_TIMELINE, sketches } from "../data/sketches.js";
 import SketchPaper from "./SketchPaper.jsx";
-import { isViewTransitionRunning } from "../lib/viewTransition.js";
+import SketchLightboxImage from "./SketchLightboxImage.jsx";
+import { fullSketchImages, warmSketchNeighbors, warmSketchPreviews } from "../lib/sketchImageCache.js";
+import { isViewTransitionRunning, transitionsSettled } from "../lib/viewTransition.js";
+import { claimSketchPreloaderWhenActive, shouldShowSketchPreloader } from "../lib/sketchPreloader.js";
+import SketchbookPreloader from "./SketchbookPreloader.jsx";
 
 // The artist side, built like a sketchbook rather than a website: pencil on paper,
 // headlines pasted in from magazine cutouts, notes in his handwriting.
@@ -18,7 +22,7 @@ const bySlug = (slug) => sketches.find((s) => s.slug === slug);
 const jitter = (seed, spread) => (((Math.sin(seed * 999.7) + 1) / 2) * 2 - 1) * spread;
 
 /* Words pasted in from magazine cutouts, one letter at a time. */
-function Cutout({ text, size = 1, seed = 1, className = "", delay = 0 }) {
+export function Cutout({ text, size = 1, seed = 1, className = "", delay = 0 }) {
   let n = 0;
   return (
     <span className={`cut ${className}`} style={{ "--cut": size }} role="img" aria-label={text}>
@@ -67,61 +71,36 @@ const D = {
   pencil: "M10 90 L 66 34 L 82 50 L 26 106 Z M10 90 L 4 112 L 26 106 M58 42 L 74 58 M66 34 L 76 24 Q 82 18 88 24 L 92 28 Q 98 34 92 40 L 82 50",
 };
 
-/* One-time intro: the grid sketches in, a frame gets roughed out, the title gets pasted down, page turns. */
-function Intro({ onDone }) {
-  const [phase, setPhase] = useState("draw");
-  useEffect(() => {
-    const t1 = setTimeout(() => setPhase("turn"), 2300);
-    const t2 = setTimeout(onDone, 3100);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [onDone]);
-  return (
-    <div className={`sk-intro is-${phase}`} onClick={onDone} role="presentation">
-      <svg className="sk-intro-grid" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">
-        <defs>
-          <filter id="sk-intro-wobble"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="5" result="n" /><feDisplacementMap in="SourceGraphic" in2="n" scale="5" /></filter>
-        </defs>
-        <g filter="url(#sk-intro-wobble)">
-        {Array.from({ length: 9 }, (_, i) => (
-          <Line key={`h${i}`} d={`M0 ${60 + i * 60} C 300 ${58 + i * 60 + jitter(i, 3)}, 700 ${62 + i * 60}, 1000 ${60 + i * 60 + jitter(i + 9, 3)}`} w={0.8} delay={i * 45} />
-        ))}
-        {Array.from({ length: 16 }, (_, i) => (
-          <Line key={`v${i}`} d={`M${60 + i * 60} 0 C ${58 + i * 60 + jitter(i, 3)} 250, ${62 + i * 60} 400, ${60 + i * 60} 600`} w={0.8} delay={120 + i * 30} />
-        ))}
-        </g>
-      </svg>
-      <div className="sk-intro-center">
-        <svg className="sk-intro-frame" viewBox="0 0 600 400" preserveAspectRatio="none" aria-hidden="true">
-          <Line d={D.frame} w={2.2} delay={500} />
-          <g className="sk-intro-hatch"><Line d={D.hatch} w={1} delay={1300} /></g>
-        </svg>
-        <Cutout text="SKETCHBOOK" size={1.25} seed={3} className="sk-intro-word" delay={900} />
-        <p className="sk-pencil-hand sk-intro-sign">ashvini · since 2017</p>
-      </div>
-      <span className="sk-intro-skip">tap to skip</span>
-    </div>
-  );
-}
-
-function Sketches() {
+function Sketches({ loaderPreview = false }) {
   const [params] = useSearchParams();
   const pageRef = useRef(null);
   const dialogRef = useRef(null);
+  const backdropPress = useRef(false);
   const [open, setOpen] = useState(null);
   const [arrivedOnPaper] = useState(() => isViewTransitionRunning());
-  const [intro, setIntro] = useState(() => {
-    if (isViewTransitionRunning()) return false;
-    try {
-      if (window.matchMedia("(max-width: 600px)").matches) return false;
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
-      if (sessionStorage.getItem("sk-intro-seen")) return false;
-    } catch { /* storage off: just play it */ }
-    return true;
+  const [introStage, setIntroStage] = useState(() => {
+    if (loaderPreview) return "done";
+    if (window.matchMedia("(max-width: 600px)").matches) return "done";
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return "done";
+    return shouldShowSketchPreloader() ? "pending" : "done";
   });
-  const endIntro = useCallback(() => {
-    setIntro(false);
-    try { sessionStorage.setItem("sk-intro-seen", "1"); } catch { /* fine */ }
-  }, []);
+  const intro = introStage !== "done";
+  const blockingIntro = introStage === "pending" || introStage === "playing";
+  const endIntro = useCallback(() => setIntroStage("done"), []);
+  const revealIntro = useCallback(() => setIntroStage("revealing"), []);
+
+  useEffect(() => {
+    if (loaderPreview || introStage !== "pending") return undefined;
+    let active = true;
+    (async () => {
+      const claimed = await claimSketchPreloaderWhenActive(() => active);
+      if (!active) return;
+      if (!claimed) { setIntroStage("done"); return; }
+      await transitionsSettled();
+      if (active) setIntroStage("playing");
+    })().catch(() => { if (active) setIntroStage("done"); });
+    return () => { active = false; };
+  }, [introStage, loaderPreview]);
 
   useEffect(() => {
     if (document.querySelector(`link[href="${FONT_HREF}"]`)) return;
@@ -133,7 +112,7 @@ function Sketches() {
 
   useEffect(() => {
     const root = pageRef.current;
-    if (!root || intro) return undefined;
+    if (!root || blockingIntro) return undefined;
     const targets = root.querySelectorAll(".sk-anim");
     if (!("IntersectionObserver" in window)) { targets.forEach((el) => el.classList.add("is-in")); return undefined; }
     const io = new IntersectionObserver(
@@ -142,19 +121,26 @@ function Sketches() {
     );
     targets.forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, [intro]);
+  }, [blockingIntro]);
 
   useEffect(() => {
     const type = params.get("type");
     const target = type && pageRef.current?.querySelector(`#sk-${CSS.escape(type)}`);
-    if (!target || intro) return undefined;
+    if (!target || blockingIntro) return undefined;
     const timer = setTimeout(() => target.scrollIntoView({ block: "start" }), 60);
     return () => clearTimeout(timer);
-  }, [params, intro]);
+  }, [params, blockingIntro]);
 
   const item = open ? open.list[open.index] : null;
   const close = useCallback(() => setOpen(null), []);
-  const step = useCallback((delta) => setOpen((o) => (o ? { ...o, index: (o.index + delta + o.list.length) % o.list.length } : o)), []);
+  const step = useCallback((delta) => setOpen((o) => (o ? { ...o, previewSrc: undefined, index: (o.index + delta + o.list.length) % o.list.length } : o)), []);
+  const openSketch = (list, index, event) => setOpen({ list, index, previewSrc: event.currentTarget.querySelector("img")?.currentSrc });
+
+  useEffect(() => {
+    if (!open) return;
+    warmSketchNeighbors(open.list, open.index);
+    warmSketchPreviews(open.list);
+  }, [open]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -183,9 +169,13 @@ function Sketches() {
 
   return (
     <>
-      <HeaderNav />
-      {intro && <Intro onDone={endIntro} />}
-      <div className={`sk-page ${intro ? "is-waiting" : "is-live"}`} ref={pageRef}>
+      <div inert={intro} aria-hidden={intro || undefined}><HeaderNav /></div>
+      {intro && (
+        <SketchbookPreloader playing={introStage !== "pending"} pageRef={pageRef} onReveal={revealIntro} onDone={endIntro}>
+          <Cutout text="ASHVINI" size={0.4} seed={51} />
+        </SketchbookPreloader>
+      )}
+      <div className={`sk-page ${blockingIntro ? "is-waiting" : "is-live"}`} ref={pageRef} inert={intro} aria-hidden={intro || undefined}>
         <SketchPaper />
         <div className="sk-margin" aria-hidden="true" />
 
@@ -219,7 +209,7 @@ function Sketches() {
           <figure className="sk-pin sk-hero-pin" style={{ "--t": "3deg" }}>
             <span className="sk-tape" style={{ "--tr": "-28deg", left: "-20px", top: "-12px" }} />
             <span className="sk-tape" style={{ "--tr": "34deg", right: "-22px", top: "-10px" }} />
-            <button type="button" className="sk-pin-img" onClick={() => setOpen({ list: sketches, index: hero.id - 1 })} aria-label={`Open ${hero.title}`}>
+            <button type="button" className="sk-pin-img" onClick={(event) => openSketch(sketches, hero.id - 1, event)} onPointerEnter={() => fullSketchImages.load(hero.full).catch(() => {})} onFocus={() => fullSketchImages.load(hero.full).catch(() => {})} aria-label={`Open ${hero.title}`}>
               <picture>
                 <source srcSet={hero.thumbAvif} type="image/avif" />
                 <img src={hero.thumbWebp} width="496" height="620" fetchPriority="high" alt={`${hero.title}, ${hero.medium}, ${hero.year}, by Ashvini Kumar`} />
@@ -259,7 +249,7 @@ function Sketches() {
                 {list.map((s, i) => (
                   <figure className="sk-pin" key={s.slug} style={{ "--t": `${jitter(i + ci * 7, 1.8)}deg`, "--d": `${Math.min(i, 8) * 70}ms` }}>
                     <span className="sk-tape" style={{ "--tr": `${i % 2 ? 30 : -30}deg`, [i % 2 ? "right" : "left"]: "-18px", top: "-12px" }} />
-                    <button type="button" className="sk-pin-img" onClick={() => setOpen({ list, index: i })} aria-label={`Open ${s.title}`}>
+                    <button type="button" className="sk-pin-img" onClick={(event) => openSketch(list, i, event)} onPointerEnter={() => fullSketchImages.load(s.full).catch(() => {})} onFocus={() => fullSketchImages.load(s.full).catch(() => {})} aria-label={`Open ${s.title}`}>
                       <picture>
                         <source srcSet={s.thumbAvif} type="image/avif" />
                         <img src={s.thumbWebp} alt={`${s.title}, ${s.medium}, ${s.year}, by Ashvini Kumar`} loading="lazy" decoding="async" />
@@ -289,7 +279,7 @@ function Sketches() {
                 <li key={t.year} style={{ "--d": `${300 + i * 200}ms`, "--t": `${jitter(i + 30, 3)}deg` }}>
                   <span className="sk-dot" />
                   <span className="sk-pencil-hand sk-year">{t.year}</span>
-                  <button type="button" className="sk-scrap" onClick={() => setOpen({ list: sketches, index: s.id - 1 })} aria-label={`Open ${s.title}`}>
+                  <button type="button" className="sk-scrap" onClick={(event) => openSketch(sketches, s.id - 1, event)} onPointerEnter={() => fullSketchImages.load(s.full).catch(() => {})} onFocus={() => fullSketchImages.load(s.full).catch(() => {})} aria-label={`Open ${s.title}`}>
                     <img src={s.thumbWebp} alt={`${s.title} (${t.year})`} loading="lazy" />
                   </button>
                   <span className="sk-pencil-hand sk-tnote">{t.note}</span>
@@ -318,23 +308,29 @@ function Sketches() {
         ref={dialogRef}
         className="sk-lightbox"
         onClose={close}
-        onClick={(e) => { if (e.target === dialogRef.current) close(); }}
+        onPointerDown={(e) => { backdropPress.current = e.target === e.currentTarget; }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget && backdropPress.current) close();
+          backdropPress.current = false;
+        }}
         aria-label={item ? item.title : "Artwork"}
       >
         {item && (
           <div className="sk-lightbox-inner">
-            <img src={item.full} alt={`${item.title}, ${item.medium}, ${item.year}, by Ashvini Kumar`} />
+            <div className="sk-lightbox-stage">
+              <SketchLightboxImage key={item.full} item={item} previewSrc={open.previewSrc} />
+            </div>
             <div className="sk-lightbox-copy">
               <span className="sk-type">no.{sheetNo(item)} · {item.year}</span>
               <h2 className="sk-pencil-hand">{item.title.toLowerCase()}</h2>
               <p className="sk-type">{item.note}</p>
               <p className="sk-type sk-lb-medium">{item.medium}</p>
               <a className="sk-type" href={item.url} target="_blank" rel="noreferrer">on instagram ↗</a>
-              <div className="sk-lightbox-nav">
+            </div>
+            <div className="sk-lightbox-nav">
                 <button type="button" onClick={() => step(-1)} aria-label="Previous">←</button>
                 <span className="sk-type">{open.index + 1} / {open.list.length}</span>
                 <button type="button" onClick={() => step(1)} aria-label="Next">→</button>
-              </div>
             </div>
             <button type="button" className="sk-lightbox-close" onClick={close} aria-label="Close">×</button>
           </div>

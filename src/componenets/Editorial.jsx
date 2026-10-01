@@ -35,6 +35,7 @@ function Editorial() {
   const [params] = useSearchParams();
   const pageRef = useRef(null);
   const dialogRef = useRef(null);
+  const backdropPress = useRef(false);
   const [lightbox, setLightbox] = useState(null); // { list, index }
   const [arrivedFromPaper] = useState(() => document.documentElement.dataset.vt === "paper-out");
 
@@ -323,12 +324,18 @@ function Editorial() {
         ref={dialogRef}
         className="editorial-lightbox"
         onClose={close}
-        onClick={(event) => { if (event.target === dialogRef.current) close(); }}
+        onPointerDown={(event) => { backdropPress.current = event.target === event.currentTarget; }}
+        onClick={(event) => {
+          if (event.target === event.currentTarget && backdropPress.current) close();
+          backdropPress.current = false;
+        }}
         aria-label={open ? open.title : "Post preview"}
       >
         {open && (
           <div className="editorial-lightbox-inner">
-            <img src={open.full} alt={`${open.title}, social post designed for ${open.client}`} width="1080" height="1350" />
+            <div className="editorial-lightbox-stage">
+              <img src={open.full} alt={`${open.title}, social post designed for ${open.client}`} width="1080" height="1350" />
+            </div>
             <div className="editorial-lightbox-copy">
               <span>{label(open.category)} · {open.client}</span>
               <h2>{open.title}</h2>
@@ -336,11 +343,11 @@ function Editorial() {
               <a href={open.url} target="_blank" rel="noreferrer">
                 View original on {open.platform} <span aria-hidden="true">↗</span>
               </a>
-              <div className="editorial-lightbox-nav">
+            </div>
+            <div className="editorial-lightbox-nav">
                 <button type="button" onClick={() => step(-1)} aria-label="Previous piece">←</button>
                 <span>{lightbox.index + 1} / {lightbox.list.length}</span>
                 <button type="button" onClick={() => step(1)} aria-label="Next piece">→</button>
-              </div>
             </div>
             <button type="button" className="editorial-lightbox-close" onClick={close} aria-label="Close">×</button>
           </div>

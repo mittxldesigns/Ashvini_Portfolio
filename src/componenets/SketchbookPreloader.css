@@ -1,0 +1,96 @@
+.sk-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  background: #fdfcf7;
+  color: #464942;
+  overflow: hidden;
+  text-align: center;
+  isolation: isolate;
+}
+
+.sk-loader-paper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.sk-loader-paper pattern path { fill: none; stroke: #a7aaa3; stroke-width: .6; opacity: .13; }
+.sk-loader-margin { fill: none; stroke: #bb928a; stroke-width: .8; opacity: .19; }
+
+.sk-loader-composition {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(420px, 85vw);
+  padding-bottom: 18px;
+}
+
+.sk-loader-eyebrow,
+.sk-loader-opening,
+.sk-loader-skip {
+  font: 11px/1.4 "Courier Prime", "Courier New", monospace;
+  color: #8c8d82;
+}
+
+.sk-loader-eyebrow { margin: 0 0 10px; transform: rotate(-1deg); letter-spacing: .04em; }
+.sk-loader-drawing { position: relative; width: clamp(200px, 27vw, 310px); height: clamp(250px, 34vw, 380px); margin: 0; }
+.sk-loader-portrait { display: block; width: 88%; height: 100%; object-fit: contain; margin: auto; transform: rotate(-2.1deg); opacity: .94; }
+.sk-loader-pencil-marks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.sk-loader-pencil-marks path { fill: none; stroke: #8d9085; stroke-width: .65; stroke-linecap: round; opacity: .29; }
+.sk-loader-pencil-marks .sk-loader-smudge { stroke-width: 2.7; opacity: .08; }
+.sk-loader-pencil-note { position: absolute; right: 4%; bottom: 5%; font: 25px/1 "Reenie Beanie", "Bradley Hand", cursive; color: #8b8b80; transform: rotate(-6deg); }
+.sk-loader-title { margin-top: 8px; transform: rotate(-1.1deg); }
+.sk-loader-title .cut { font-size: clamp(32px, 4.2vw, 49px); gap: 0; }
+.sk-loader-title .cut-l {
+  opacity: 1;
+  animation: sk-loader-cut-wobble calc(1000ms + var(--i) * 37ms) steps(1, end) calc(var(--i) * -113ms) infinite !important;
+  filter: drop-shadow(0 1px 1px rgba(60, 56, 48, .12));
+}
+.sk-loader-underline { width: 220px; height: 16px; margin-top: 6px; overflow: visible; }
+.sk-loader-underline path { fill: none; stroke: #7c7f71; stroke-width: .9; opacity: .5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+.sk-loader.is-drawing .sk-loader-underline path { animation: sk-loader-pencil 380ms cubic-bezier(.664, 0, .563, 1) 1540ms both; }
+.sk-loader-opening { margin-top: 14px; font-size: 10px; opacity: .68; }
+.sk-loader-skip { position: absolute; right: 24px; bottom: 22px; padding: 8px 0; border: 0; background: none; cursor: pointer; }
+.sk-loader-skip:hover { color: #464942; }
+.sk-loader-skip:focus-visible { outline: 1px dashed #7c7f71; outline-offset: 4px; }
+.sk-loader.is-leaving { animation: sk-loader-leave 280ms cubic-bezier(.664, 0, .563, 1) both; }
+.sk-loader.is-leaving .sk-loader-underline path { stroke-dashoffset: 0; }
+
+@keyframes sk-loader-pencil { to { stroke-dashoffset: 0; } }
+@keyframes sk-loader-leave { to { opacity: 0; transform: translateY(-10px) rotate(-.35deg); } }
+@keyframes sk-loader-cut-wobble {
+  0%, 100% { transform: translateY(var(--y)) rotate(var(--r)) scale(var(--s)); }
+  20% { transform: translate(.6px, calc(var(--y) - .6px)) rotate(calc(var(--r) + .9deg)) scale(var(--s)); }
+  40% { transform: translate(-.7px, calc(var(--y) + .5px)) rotate(calc(var(--r) - .7deg)) scale(var(--s)); }
+  60% { transform: translate(.3px, calc(var(--y) + .8px)) rotate(calc(var(--r) + .5deg)) scale(var(--s)); }
+  80% { transform: translate(-.4px, calc(var(--y) - .3px)) rotate(calc(var(--r) - 1deg)) scale(var(--s)); }
+}
+
+@media (max-width: 600px) {
+  .sk-loader-composition { padding-bottom: 8px; }
+  .sk-loader-drawing { width: min(270px, 72vw); height: min(340px, 43svh); }
+  .sk-loader-title .cut { font-size: 38px; }
+  .sk-loader-paper pattern path { opacity: .09; }
+  .sk-loader-margin { opacity: .09; }
+  .sk-loader-skip { right: 20px; bottom: 18px; }
+}
+
+@media (max-height: 540px) {
+  .sk-loader-drawing { width: 170px; height: 210px; }
+  .sk-loader-title .cut { font-size: 30px; }
+  .sk-loader-eyebrow { margin-bottom: 0; }
+  .sk-loader-opening { margin-top: 5px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk-loader,
+  .sk-loader-underline path,
+  .sk-loader-title .cut-l { animation: none !important; }
+  .sk-loader-underline path { stroke-dashoffset: 0; }
+}
