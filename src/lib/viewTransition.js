@@ -71,7 +71,15 @@ export async function withViewTransition(kind, update, before) {
   const t = document.startViewTransition(() => {
     const committed = nextRouteCommit(1000);
     flushSync(update);
-    return committed;
+    return committed.then(() => {
+      if (kind !== "paper-in" && kind !== "paper-out") return;
+      // Keep the paper's next frame complete, without holding navigation on slow images.
+      const images = [...document.querySelectorAll('.sk-hero img, .ed-wall img[loading="eager"]')];
+      return Promise.race([
+        Promise.all(images.map((img) => img.decode?.().catch(() => {}))),
+        new Promise((resolve) => setTimeout(resolve, 240)),
+      ]);
+    });
   });
   settled = t.finished.catch(() => {});
   t.finished.finally(() => {

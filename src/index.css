@@ -1335,13 +1335,8 @@ p {
 }
 
 /* The dark site stays underneath an opaque sheet of paper. */
-html[data-vt="paper-in"] .headernav,
-html[data-vt="paper-out"] .headernav {
+html[data-vt="paper-in"] .headernav {
   view-transition-name: work-header;
-}
-
-html[data-vt="paper-out"] .headernav:not(.headernav--paper) {
-  background: linear-gradient(#0e0e0e 88%, rgba(14, 14, 14, 0));
 }
 
 ::view-transition-group(work-header) {
@@ -1665,6 +1660,9 @@ html[data-vt="swap"]::view-transition-old(root) {
   position: relative;
   max-width: 720px;
 }
+
+/* A paper exit captures the finished destination, rather than its transparent entrance. */
+.ed-from-paper .reveal { animation: none; }
 
 .ed-kicker {
   color: #81bdf2;

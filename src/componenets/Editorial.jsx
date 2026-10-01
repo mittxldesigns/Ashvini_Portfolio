@@ -36,6 +36,7 @@ function Editorial() {
   const pageRef = useRef(null);
   const dialogRef = useRef(null);
   const [lightbox, setLightbox] = useState(null); // { list, index }
+  const [arrivedFromPaper] = useState(() => document.documentElement.dataset.vt === "paper-out");
 
   // hero wall: four columns, each a different rotation of the posts
   const columns = useMemo(() => {
@@ -96,7 +97,7 @@ function Editorial() {
   return (
     <>
       <HeaderNav />
-      <div className="ed-page" ref={pageRef}>
+      <div className={`ed-page${arrivedFromPaper ? " ed-from-paper" : ""}`} ref={pageRef}>
         {/* ---------- hero: a wall of the work ---------- */}
         <section className="ed-hero" aria-labelledby="ed-title">
           <div className="ed-wall" aria-hidden="true">
