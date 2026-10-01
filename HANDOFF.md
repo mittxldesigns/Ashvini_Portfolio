@@ -42,3 +42,11 @@ TODO next:
 - `~/Downloads/linkedin-autoapply/` (v1.4.1), loaded unpacked in Chrome profile "Profile 8" (kumarak9335@gmail.com). Bumping `version.txt` makes it self-reload.
 - Pacing: 07:00-01:00 local, bursts of 10-15 then 5-6 min cooldown, soft cap ~50/day, alternates India-remote with abroad searches, priority pop-culture employers, blocks FandomWire/Animated Times, honest answers only. Claude Code native bridge for odd questions (`host/`). Tests: `node tests/rules.test.js`, jsdom sim in `tests/`.
 - DECIDED (v1.4.2): "make this job your sole focus / drop other clients?" is answered Yes (he'll commit if the offer is worth it).
+
+## Bot status (checked 2026-10-01 ~22:20 IST)
+- Live, ~70+ applications so far (36 on Sep 30, 35 on Oct 1). LinkedIn's Easy Apply daily limit hit at ~35/day (08:10 IST); bot pauses until ~07:00 next day.
+- TODO (small, in `~/Downloads/linkedin-autoapply/content.js`):
+  1. Persist the limit pause: when LIMIT is detected, `S.set("limitUntil", nextStart)` and at the top of `main()` nap if `Date.now() < limitUntil`. Today a page reload during the pause made it re-hit the limit twice (extension self-update, manual tab navigation).
+  2. Lower the default soft cap from 50 to ~32 (`s.maxPerDay ?? 50` in `main()` and popup default) so it stops just before LinkedIn's wall.
+  3. Bump `version.txt` + manifest version so it self-reloads; run `node tests/rules.test.js` and the jsdom suite (`tests/test.js`, needs `npm i jsdom`).
+- Don't navigate the bot's own LinkedIn tab when checking status; read `#autoapply-status` from it or use the extension popup.
