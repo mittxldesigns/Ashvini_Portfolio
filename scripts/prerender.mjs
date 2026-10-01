@@ -77,6 +77,19 @@ const homeShell = template.slice(
   template.indexOf(homeShellEnd),
 );
 
+function siteNav(path) {
+  const links = [
+    ["/", "Home"],
+    ["/portfolio", "3D & Web3D"],
+    ["/editorial", "Social & editorial"],
+    ["/sketches", "Sketchbook"],
+    ["/about", "About"],
+  ].map(([href, label]) =>
+    `<a href="${href}"${path === href ? ' aria-current="page"' : ""}>${escapeHtml(label)}</a>`,
+  ).join(" · ");
+  return `<nav aria-label="Site">${links}</nav>`;
+}
+
 function portfolioShell() {
   const links = pieces.map((piece, index) =>
     `<li><a href="/portfolio/${piece.id}"><span>${String(index + 1).padStart(2, "0")}</span>${escapeHtml(piece.title)}</a></li>`,
@@ -113,7 +126,7 @@ function sketchesShell() {
       .map((s) => `<li><a href="${escapeHtml(s.url)}">${escapeHtml(s.title)}</a> (${escapeHtml(s.medium)}, ${s.year}): ${escapeHtml(s.note)}</li>`).join("");
     return `<h2>${escapeHtml(c.label)}</h2><p>${escapeHtml(c.blurb)}</p><ul>${items}</ul>`;
   }).join("");
-  return `<main class="seo-shell"><a class="seo-home-link" href="/">${escapeHtml(PERSON_NAME)}</a><h1>Sketchbook: the artist side of ${escapeHtml(PERSON_NAME)}</h1><p>Film poster concepts, character paintings and scene studies in Photoshop, plus graphite fan art and paid ink cover commissions, from 2017 to today.</p>${chapters}<a class="seo-contact" href="${escapeHtml(CONTRA_PROFILE)}">Commission a piece ↗</a></main>`;
+  return `<main class="seo-shell"><a class="seo-home-link" href="/">${escapeHtml(PERSON_NAME)}</a><h1>Sketchbook: the artist side of ${escapeHtml(PERSON_NAME)}</h1><p>Film poster concepts, character paintings and scene studies in Photoshop, plus graphite fan art from 2017 and paid ink cover commissions from 2020.</p>${chapters}<a class="seo-contact" href="${escapeHtml(CONTRA_PROFILE)}">Commission a piece ↗</a></main>`;
 }
 
 function notFoundShell() {
@@ -125,8 +138,11 @@ async function writePage(path, destination, shell) {
   const image = page.kind === "project"
     ? `${SITE_URL}${builtImage(page.project.slug)}`
     : page.image;
+  const linkedShell = page.kind === "home" || page.kind === "notFound"
+    ? shell
+    : shell.replace("<h1>", `${siteNav(path)}<h1>`);
   let html = replaceSection(template, "<!-- SEO_HEAD_START -->", "<!-- SEO_HEAD_END -->", headFor(page, image));
-  html = replaceSection(html, homeShellStart, homeShellEnd, shell);
+  html = replaceSection(html, homeShellStart, homeShellEnd, linkedShell);
   await mkdir(dirname(join(output, destination)), { recursive: true });
   await writeFile(join(output, destination), html);
 }
@@ -144,7 +160,6 @@ for (const [index, piece] of pieces.entries()) {
 await writePage("/404", "404.html", notFoundShell());
 
 const sitemapPaths = ["/", "/portfolio", "/about", "/editorial", "/sketches", ...pieces.map((piece) => `/portfolio/${piece.id}`)];
-const lastmod = new Date().toISOString().slice(0, 10);
-const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapPaths.map((path) => `  <url><loc>${SITE_URL}${path}</loc><lastmod>${lastmod}</lastmod></url>`).join("\n")}\n</urlset>\n`;
+const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapPaths.map((path) => `  <url><loc>${SITE_URL}${path}</loc></url>`).join("\n")}\n</urlset>\n`;
 await writeFile(join(output, "sitemap.xml"), sitemap);
 console.log(`Generated ${sitemapPaths.length} search-ready pages and sitemap.xml`);

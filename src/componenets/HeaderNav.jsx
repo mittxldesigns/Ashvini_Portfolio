@@ -15,7 +15,7 @@ function HeaderNav() {
     <div className={side === "sketches" ? "headernav headernav--paper" : "headernav"}>
       <TransitionLink
         className="name"
-        to="/portfolio"
+        to={detail ? "/portfolio" : "/"}
         kind={detail ? "close" : "page"}
         onBeforeNavigate={() => {
           if (detail) gridState.returnToId = Number(detail.params.id);

@@ -118,6 +118,9 @@ function Home() {
             <TransitionLink className="cta cta-outline" to="/editorial">
               Social &amp; editorial work
             </TransitionLink>
+            <TransitionLink className="cta cta-outline cta-paper" to="/sketches">
+              Sketchbook
+            </TransitionLink>
           </div>
           <p className="home-cred">
             Senior Designer at Animated Times · Designer at FandomWire · Top 1% Spline expert on Contra
@@ -125,6 +128,9 @@ function Home() {
           <a className="home-contact" href={CONTRA_PROFILE} target="_blank" rel="noreferrer">
             Start a project <span aria-hidden="true">↗</span>
           </a>
+          <nav className="home-browse" aria-label="About">
+            <TransitionLink to="/about">About Ashvini →</TransitionLink>
+          </nav>
         </div>
       </div>
 

@@ -2162,6 +2162,12 @@ html[data-vt="swap"]::view-transition-old(root) {
   margin: 0;
 }
 
+.home-track .cta-paper { background: #f2eddf; border-color: #c8beaa; color: #49443c; border-radius: 4px 8px 5px 7px; }
+.home-track .cta-paper:hover { background: #eae2ce; }
+.home-browse { margin-top: 14px; }
+.home-browse a { color: #a9afb5; font-size: 13px; text-decoration: none; }
+.home-browse a:hover { color: #ffffff; }
+
 @media (max-width: 900px) {
   .ed-hero {
     padding: 110px 20px 40px;
@@ -2420,6 +2426,9 @@ html[data-vt="swap"]::view-transition-old(root) {
   border-color: #008fef;
   background: rgba(0, 143, 239, 0.08);
 }
+
+.about-sides .about-sketches { grid-column: 1 / -1; border-color: rgba(200, 190, 170, 0.3); }
+.about-sides .about-sketches span { color: #d8cdb4; }
 
 .about-sides span {
   color: #008fef;

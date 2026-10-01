@@ -51,6 +51,11 @@ function About() {
               <strong>Six years of covers, thumbnails and posts for pop-culture publishers.</strong>
               <em>FandomWire · Animated Times →</em>
             </TransitionLink>
+            <TransitionLink className="about-sketches" to="/sketches">
+              <span>Sketchbook</span>
+              <strong>Film posters, character studies, pencil and ink.</strong>
+              <em>Photoshop · graphite · ink →</em>
+            </TransitionLink>
           </div>
 
           <div className="about-experience">

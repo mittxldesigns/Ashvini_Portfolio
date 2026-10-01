@@ -64,7 +64,7 @@ export function getSeoForPath(pathname) {
       kind: "sketches",
       title: `Sketchbook: Digital Paintings & Pencil Art — ${PERSON_NAME}`,
       description:
-        "Ashvini Kumar's artist side: film poster concepts, character paintings and scene studies in Photoshop, plus graphite fan art and paid ink cover commissions since 2017.",
+        "Ashvini Kumar's artist side: film poster concepts, character paintings and scene studies in Photoshop, plus graphite fan art from 2017 and paid ink cover commissions from 2020.",
     };
   }
 
