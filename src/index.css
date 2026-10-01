@@ -3203,25 +3203,32 @@ html[data-vt="swap"]::view-transition-old(root) {
   .sk-callout-loop,
   .sk-margin-notes { display: none; }
 
-  .sk-hero { padding: 92px 20px 40px; gap: 26px; }
-  .sk-kicker { font-size: 27px; margin-bottom: 10px; transform: none; }
-  .sk-h1-under { margin: 6px 0 18px; }
+  .sk-hero { padding: 92px 20px 40px; gap: 18px; }
+  .sk-hero-copy { display: contents; }
+  .sk-hero-heading { grid-row: 1; container-type: inline-size; min-width: 0; }
+  .sk-hero-details { grid-row: 3; }
+  .sk-kicker { font-size: 22px; line-height: 1.2; margin-bottom: 8px; transform: none; }
+  .sk-h1-under { margin: 6px 0 0; }
   .sk-lede { font-size: 14.5px; line-height: 1.65; margin-bottom: 22px; }
   .sk-actions { gap: 10px; margin-bottom: 0; }
-  .sk-btn { font-size: 27px; padding: 5px 14px 7px; }
+  .sk-btn { font-size: 22px; padding: 6px 12px 8px; }
 
-  .sk-hero-pin { max-width: 78%; margin: 22px auto 0; --t: 1deg !important; }
+  .sk-hero .sk-hero-pin,
+  .sk-hero .sk-hero-pin:hover { grid-row: 2; width: 100%; max-width: none; margin: 0; transform: none; --t: 0deg !important; }
+  .sk-hero-pin .sk-callout { display: none; }
+  .sk-hero-pin .sk-tape:first-child { left: 10px !important; }
+  .sk-hero-pin .sk-tape:nth-child(2) { right: 10px !important; }
   .sk-callout { top: -40px; left: 0; font-size: 28px; }
 
   .sk-tabs { padding: 56px 20px 8px; flex-wrap: wrap; overflow-x: visible; }
-  .sk-tabs button { font-size: 22px; transform: none; }
+  .sk-tabs button { font-size: 20px; transform: none; }
 
   .sk-chapter,
   .sk-journey { padding: 18px 20px 40px; }
   .sk-chapter,
   .sk-journey { scroll-margin-top: 148px; }
   .sk-chapter-head { margin-bottom: 22px; }
-  .sk-chapter-note { font-size: 26px; transform: none; }
+  .sk-chapter-note { font-size: 22px; transform: none; }
 
   .sk-board,
   .sk-board-portraits { columns: 2; column-gap: 14px; max-width: none; }
@@ -3230,22 +3237,23 @@ html[data-vt="swap"]::view-transition-old(root) {
   .sk-pin-img::after { inset: 2px; }
   .sk-pin .sk-tape { width: 46px; height: 14px; top: -7px !important; }
   .sk-pin figcaption { padding-top: 6px; }
-  .sk-pin-cap { font-size: 22px; line-height: 1; }
+  .sk-pin-cap { font-size: 19px; line-height: 1.15; }
   .sk-pin-meta { display: none; }
 
   .sk-line { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 14px; margin-top: 26px; padding-top: 0; }
   .sk-line li:last-child { grid-column: 1 / -1; }
   .sk-dot { display: none; }
   .sk-scrap { transform: none; width: 100%; }
-  .sk-tnote { font-size: 23px; }
-  .sk-year { font-size: 30px; }
+  .sk-tnote { font-size: 20px; }
+  .sk-year { font-size: 26px; }
 
   .sk-close { padding: 40px 20px 80px; }
-  .sk-close-note { font-size: 28px; }
+  .sk-close-note { font-size: 23px; }
+  .sk-close .sk-h2 .cut { font-size: 9.5vw; }
 }
 
 @media (max-width: 420px) {
-  .sk-hero { padding-top: 148px; }
+  .sk-hero { padding-top: 136px; }
   .sk-tabs { padding-top: 132px; }
   .sk-chapter,
   .sk-journey { scroll-margin-top: 220px; }

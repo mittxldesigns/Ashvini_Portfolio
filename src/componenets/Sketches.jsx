@@ -111,6 +111,7 @@ function Sketches() {
   const [intro, setIntro] = useState(() => {
     if (isViewTransitionRunning()) return false;
     try {
+      if (window.matchMedia("(max-width: 600px)").matches) return false;
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
       if (sessionStorage.getItem("sk-intro-seen")) return false;
     } catch { /* storage off: just play it */ }
@@ -213,24 +214,28 @@ function Sketches() {
         {/* ---------- hero ---------- */}
         <section className={`sk-hero sk-anim${arrivedOnPaper ? " is-in sk-from-transition" : ""}`} aria-labelledby="sk-title">
           <div className="sk-hero-copy">
-            <p className="sk-pencil-hand sk-kicker">the stuff I draw for myself (and sometimes for money)</p>
-            <h1 id="sk-title" className="sk-h1">
-              <Cutout text="SKETCHBOOK" size={1} seed={3} delay={150} />
-            </h1>
-            <svg className="sk-h1-under" viewBox="0 0 300 16" preserveAspectRatio="none" aria-hidden="true"><Line d={D.underline} w={2} delay={900} /></svg>
-            <p className="sk-type sk-lede">
-              Started with a Deadpool sketch in 2017 and never really stopped. Graphite first, then ink
-              covers people actually paid for, and these days mostly Photoshop, one movie still at a time.
-            </p>
-            <div className="sk-actions">
-              <button type="button" className="sk-btn" onClick={() => scrollTo("sk-posters")}>flip through ↓</button>
-              <a className="sk-btn sk-btn-alt" href={CONTRA_PROFILE} target="_blank" rel="noreferrer">commission a piece ↗</a>
+            <div className="sk-hero-heading">
+              <p className="sk-pencil-hand sk-kicker">the stuff I draw for myself (and sometimes for money)</p>
+              <h1 id="sk-title" className="sk-h1">
+                <Cutout text="SKETCHBOOK" size={1} seed={3} delay={150} />
+              </h1>
+              <svg className="sk-h1-under" viewBox="0 0 300 16" preserveAspectRatio="none" aria-hidden="true"><Line d={D.underline} w={2} delay={900} /></svg>
             </div>
-            <ul className="sk-margin-notes sk-pencil-hand" aria-label="Quick facts">
-              <li>2017: first sketch (Deadpool, obviously)</li>
-              <li>2018: 16 hours on one Venom</li>
-              <li>2020: first paid ink covers</li>
-            </ul>
+            <div className="sk-hero-details">
+              <p className="sk-type sk-lede">
+                Started with a Deadpool sketch in 2017 and never really stopped. Graphite first, then ink
+                covers people actually paid for, and these days mostly Photoshop, one movie still at a time.
+              </p>
+              <div className="sk-actions">
+                <button type="button" className="sk-btn" onClick={() => scrollTo("sk-posters")}>flip through ↓</button>
+                <a className="sk-btn sk-btn-alt" href={CONTRA_PROFILE} target="_blank" rel="noreferrer">commission a piece ↗</a>
+              </div>
+              <ul className="sk-margin-notes sk-pencil-hand" aria-label="Quick facts">
+                <li>2017: first sketch (Deadpool, obviously)</li>
+                <li>2018: 16 hours on one Venom</li>
+                <li>2020: first paid ink covers</li>
+              </ul>
+            </div>
           </div>
 
           <figure className="sk-pin sk-hero-pin" style={{ "--t": "3deg" }}>
@@ -239,7 +244,7 @@ function Sketches() {
             <button type="button" className="sk-pin-img" onClick={() => setOpen({ list: sketches, index: hero.id - 1 })} aria-label={`Open ${hero.title}`}>
               <picture>
                 <source srcSet={hero.thumbAvif} type="image/avif" />
-                <img src={hero.thumbWebp} alt={`${hero.title}, ${hero.medium}, ${hero.year}, by Ashvini Kumar`} />
+                <img src={hero.thumbWebp} width="496" height="620" fetchPriority="high" alt={`${hero.title}, ${hero.medium}, ${hero.year}, by Ashvini Kumar`} />
               </picture>
             </button>
             <figcaption className="sk-pencil-hand sk-pin-cap">{hero.title.toLowerCase()} · {hero.year}</figcaption>
