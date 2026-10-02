@@ -88,7 +88,7 @@ Build inside the existing extension (`~/Downloads/linkedin-autoapply/`):
 
 
 ## Galleries, owner CMS and story checkpoint — 2026-10-02
-- Public domain: https://bettercallashvini.com. Latest Pages deployment `de0ac58c`; preview alias remains `sketches-draft.ashvini-portfolio.pages.dev` (its prior deployment `a56ccb59` predates the small same-document setup-link fix).
+- Public domain: https://bettercallashvini.com. Latest Pages deployment `de0ac58c`; latest preview is `989a198b` at `sketches-draft.ashvini-portfolio.pages.dev`, including the same-document setup-link fix.
 - Editorial: 89 post groups / 211 full frames, comprising 43 Animated Times and 46 FandomWire posts. All 74 newly supplied social links are represented. Seven explicitly marked Highlights lead in supplied order. Real source links and dates retained; 51 verified publication dates, 38 dates left unknown. Full media is lossless with original decoded pixels/dimensions retained.
 - Sketchbook: 43 artwork groups covering 45 source posts. The 19 supplied links contain 17 unique posts; three Joji sources are grouped with ordered versions. Existing 28 artworks and Bangles reference credit retained. All 17 unique supplied posts represented.
 - Source gaps: Joji's actual reel MP4, Alita's second slide and Batman: Arkham Knight's second slide were unavailable. Their genuine covers/source links are present; coverage/status metadata remains explicit. No substitute video or slides invented.
