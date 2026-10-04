@@ -3,6 +3,7 @@ import { contentRoute, published } from "./content";
 import { createMedia, serveMedia, serveSiteTour, uploadMedia } from "./media";
 import { proxy } from "./proxy";
 import { HttpError, json, rateLimit } from "./security";
+import { refineRoute } from "./refine";
 
 export default {
   async fetch(request: Request, env: SecretEnv): Promise<Response> {
@@ -18,6 +19,7 @@ export default {
       if (path.startsWith("/api/admin/")) {
         const session = await requireSession(env,request,request.method !== "GET");
         const action = path.slice(11);
+        if (action === "refine" && request.method === "POST") return await refineRoute(env,request,session.email);
         if (action === "media" && request.method === "POST") {
           await rateLimit(env,request,"upload-create",60,3600,session.email);
           return await createMedia(env,request);

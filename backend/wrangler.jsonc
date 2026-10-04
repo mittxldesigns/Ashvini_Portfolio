@@ -5,6 +5,8 @@
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
+  // Review copy only: verify model availability and account quota before deployment/inference.
+  "ai": { "binding": "AI" },
   "routes": [{ "pattern": "bettercallashvini.com/*", "zone_id": "9caba8a39454b24e1b7e7761d24232e9" }],
   "vars": {
     "OWNER_EMAIL": "kumarak9335@gmail.com",

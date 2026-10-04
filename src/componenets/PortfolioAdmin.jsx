@@ -1,9 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./PortfolioAdmin.css";
+import AdminTags from "./AdminTags.jsx";
+import VideoPlayer from "./VideoPlayer.jsx";
+import { applyRefinements } from "../lib/adminRefinement.js";
+import { previewBlob, validateUpload } from "../lib/mediaUpload.js";
+import { galleryFrames, normalizeGalleryMedia } from "../lib/galleryMedia.js";
 
 const OWNER_EMAIL = "kumarak9335@gmail.com";
 const EMPTY = { schemaVersion: 1, revision: 0, profile: {}, projects: [], editorial: [], sketches: [] };
-const COLLECTIONS = ["profile", "projects", "editorial", "sketches"];
+const COLLECTIONS = ["projects", "editorial", "sketches", "profile"];
+const LABELS = { projects: "3D Work", editorial: "Social", sketches: "Sketchbook", profile: "Page text" };
+const ACCEPT_MEDIA = "image/jpeg,image/png,image/webp,image/avif,image/gif,video/mp4,video/webm,video/quicktime,.m4v";
+const PAGE_GROUPS = {
+  about: ["name", "location", "rating", "aboutTitle", "aboutBio"],
+  home: ["tagline", "homeDescription", "homeCred"],
+  editorial: ["editorialTitle", "editorialIntro", "editorialYearsLabel", "editorialPubsTitle", "editorialPubsNote", "editorialClosingNote"],
+  sketches: ["sketchesKicker", "sketchesIntro", "sketchesClosingNote"],
+  links: ["contraUrl", "instagramUrl", "linkedinUrl", "splineUrl"],
+};
 const PROFILE_TEXT = [
   ["name", "Name"], ["location", "Location"], ["rating", "Verified rating label"], ["avatarUrl", "Profile image path"], ["tagline", "Tagline"], ["homeDescription", "Home introduction"],
   ["homeCred", "Home credibility line"], ["aboutTitle", "About heading"], ["aboutBio", "About biography"],
@@ -28,33 +42,6 @@ function ArrayEditor({ label, value, fields, onChange }) {
     <button type="button" className="cms-text-button" onClick={() => onChange(rows.filter((_, i) => i !== index))}>Remove entry</button>
   </div>)}<button type="button" onClick={() => onChange([...rows, Object.fromEntries(fields.map(([key]) => [key, ""]))])}>Add entry</button></fieldset>;
 }
-async function previewBlob(file) {
-  const url = URL.createObjectURL(file);
-  try {
-    const canvas = document.createElement("canvas"), context = canvas.getContext("2d");
-    if (!context) throw new Error("This browser could not create an upload preview.");
-    let source, width, height;
-    if (file.type.startsWith("video/")) {
-      source = document.createElement("video"); source.preload = "auto"; source.muted = true; source.playsInline = true;
-      await new Promise((resolve, reject) => {
-        const timer = window.setTimeout(() => reject(new Error("The video preview timed out. Try an MP4 or WebM file.")), 20000);
-        source.onloadeddata = () => { clearTimeout(timer); resolve(); };
-        source.onerror = () => { clearTimeout(timer); reject(new Error("The video format could not be opened. Try MP4 or WebM.")); };
-        source.src = url;
-      });
-      width = source.videoWidth; height = source.videoHeight;
-    } else {
-      source = new Image(); source.src = url; await source.decode(); width = source.naturalWidth; height = source.naturalHeight;
-    }
-    if (!width || !height) throw new Error("The file has no usable image dimensions.");
-    const scale = Math.min(1, 1000 / Math.max(width, height)); canvas.width = Math.max(1, Math.round(width * scale)); canvas.height = Math.max(1, Math.round(height * scale));
-    context.fillStyle = "#fff"; context.fillRect(0, 0, canvas.width, canvas.height); context.drawImage(source, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.86));
-    if (!blob) throw new Error("The preview could not be created.");
-    return { blob, width, height };
-  } finally { URL.revokeObjectURL(url); }
-}
-
 function consumeSetupFragment() {
   const value = new URLSearchParams(window.location.hash.slice(1)).get("setup") || "";
   if (!/^[a-f0-9]{64}$/.test(value)) return "";
@@ -65,8 +52,12 @@ function consumeSetupFragment() {
 export default function PortfolioAdmin({ initialContent = EMPTY }) {
   const [session, setSession] = useState(null), [content, setContent] = useState(initialContent);
   const [revision, setRevision] = useState(0), [publishedRevision, setPublishedRevision] = useState(null);
-  const [history, setHistory] = useState([]), [section, setSection] = useState("profile"), [selected, setSelected] = useState(0);
+  const [history, setHistory] = useState([]), [section, setSection] = useState("projects"), [selected, setSelected] = useState(0);
   const [dirty, setDirty] = useState(false), [busy, setBusy] = useState(""), [error, setError] = useState(""), [notice, setNotice] = useState("");
+  const [loaded, setLoaded] = useState(false), [search, setSearch] = useState(""), [filter, setFilter] = useState("all");
+  const [mobileEditing, setMobileEditing] = useState(false), [profilePage, setProfilePage] = useState("about");
+  const [refinements, setRefinements] = useState([]), [refineWarnings, setRefineWarnings] = useState([]);
+  const publishRef = useRef(null), refineRef = useRef(null), editorRef = useRef(null), operationRef = useRef(false);
   const [setupToken, setSetupToken] = useState(consumeSetupFragment);
   const emailRef = useRef(null), passwordRef = useRef(null), fileRef = useRef(null);
   const request = useCallback(async (path, method = "GET", body, extra = {}) => {
@@ -87,7 +78,7 @@ export default function PortfolioAdmin({ initialContent = EMPTY }) {
   }, [session?.csrfToken]);
   const loadDraft = useCallback(async () => {
     const data = await request("/api/admin/content");
-    setContent(data.content || initialContent); setRevision(data.revision); setPublishedRevision(data.publishedRevision); setHistory(data.history || []); setDirty(false); setSelected(0);
+    setContent(data.content || initialContent); setRevision(data.revision); setPublishedRevision(data.publishedRevision); setHistory(data.history || []); setDirty(false); setLoaded(true); setSelected(0);
   }, [request, initialContent]);
   useEffect(() => {
     const changed = () => { const value = consumeSetupFragment(); if (value) setSetupToken(value); };
@@ -106,7 +97,7 @@ export default function PortfolioAdmin({ initialContent = EMPTY }) {
     let active = true;
     request("/api/admin/content").then((data) => {
       if (!active) return;
-      setContent(data.content || initialContent); setRevision(data.revision); setPublishedRevision(data.publishedRevision); setHistory(data.history || []); setDirty(false);
+      setContent(data.content || initialContent); setRevision(data.revision); setPublishedRevision(data.publishedRevision); setHistory(data.history || []); setDirty(false); setLoaded(true);
     }).catch((failure) => { if (active) setError(failure.message); });
     return () => { active = false; };
   }, [session?.authenticated, request, initialContent]);
@@ -114,7 +105,7 @@ export default function PortfolioAdmin({ initialContent = EMPTY }) {
     const warn = (event) => { if (dirty) { event.preventDefault(); event.returnValue = ""; } };
     window.addEventListener("beforeunload", warn); return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
-  const run = async (label, work) => { if (busy) return; setBusy(label); setError(""); setNotice(""); try { await work(); } catch (failure) { setError(failure.message); } finally { setBusy(""); } };
+  const run = async (label, work) => { if (operationRef.current) return; operationRef.current = true; setBusy(label); setError(""); setNotice(""); try { await work(); } catch (failure) { setError(failure.message); } finally { operationRef.current = false; setBusy(""); } };
   const patchProfile = (key, value) => { setContent((current) => ({ ...current, profile: { ...current.profile, [key]: value } })); setDirty(true); };
   const rows = Array.isArray(content[section]) ? content[section] : [], item = rows[selected];
   const patchItem = (key, value) => { setContent((current) => ({ ...current, [section]: current[section].map((row, index) => index === selected ? { ...row, [key]: value } : row) })); setDirty(true); };
@@ -126,23 +117,47 @@ export default function PortfolioAdmin({ initialContent = EMPTY }) {
     const password = passwordRef.current?.value || "", email = emailRef.current?.value || "";
     if (passwordRef.current) passwordRef.current.value = "";
     const data = await request(`/api/auth/${setupToken ? "setup" : "login"}`, "POST", { email, password }, setupToken ? { "X-Setup-Token": setupToken } : {});
-    setSetupToken(""); setSession(data); setNotice("Signed in.");
+    setLoaded(false); setSetupToken(""); setSession(data); setNotice("Signed in.");
   }); };
-  const upload = (file, asFrame = false) => run("Uploading original and preview", async () => {
+  const putFile = (path, file, mime, label) => new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest(); xhr.open("PUT", path); xhr.withCredentials = true; xhr.timeout = 600000;
+    xhr.setRequestHeader("Content-Type", mime); xhr.setRequestHeader("X-CSRF-Token", session.csrfToken);
+    xhr.upload.onprogress = (event) => { if (event.lengthComputable) setBusy(`${label} ${Math.round(event.loaded / event.total * 100)}%`); };
+    xhr.onerror = () => reject(new Error("Upload interrupted. Your existing work is safe; choose the file again to retry."));
+    xhr.ontimeout = () => reject(new Error("Upload timed out. Check your connection and try again."));
+    xhr.onload = () => { let result; try { result = JSON.parse(xhr.responseText); } catch { reject(new Error("The upload service returned an unexpected response.")); return; }
+      if (xhr.status === 401) setSession({ authenticated: false, initialized: true });
+      xhr.status >= 200 && xhr.status < 300 ? resolve(result) : reject(new Error(result?.error?.message || "The upload could not finish."));
+    };
+    xhr.send(file);
+  });
+  const upload = (file, asFrame = false) => run("Preparing preview…", async () => {
     if (!file || !item) return;
-    if (file.size > (file.type.startsWith("video/") ? 80 : 30) * 1024 * 1024) throw new Error("Choose an image under 30 MB or a video under 80 MB.");
-    const preview = await previewBlob(file);
-    const metadata = await request("/api/admin/media", "POST", { filename: file.name, mime: file.type, size: file.size, previewMime: preview.blob.type, previewSize: preview.blob.size });
-    await request(`/api/admin/media/${metadata.id}/original`, "PUT", file, { "Content-Type": file.type });
-    await request(`/api/admin/media/${metadata.id}/preview`, "PUT", preview.blob, { "Content-Type": preview.blob.type });
-    const isVideo = file.type.startsWith("video/");
+    const mime = validateUpload(file);
+    const preview = await previewBlob(file, mime);
+    const metadata = await request("/api/admin/media", "POST", { filename: file.name, mime, size: file.size, previewMime: preview.blob.type, previewSize: preview.blob.size });
+    await putFile(`/api/admin/media/${metadata.id}/original`, file, mime, "Uploading original");
+    await putFile(`/api/admin/media/${metadata.id}/preview`, preview.blob, preview.blob.type, "Uploading preview");
+    const isVideo = mime.startsWith("video/");
     const frame = { asset: metadata.original, full: metadata.original, video: isVideo ? metadata.original : null, thumbWebp: metadata.preview, poster: metadata.preview, width: preview.width, height: preview.height, nsfw: Boolean(item.nsfw), mediaType: isVideo ? "video" : "image" };
-    setContent((current) => ({ ...current, [section]: current[section].map((row, index) => index === selected ? {
-      ...(asFrame ? { ...row, frames: [...(row.frames || []), frame] } : { ...row, mediaId: metadata.id, mediaType: isVideo ? "video" : "image", full: metadata.original, frames: [frame, ...(row.frames || []).slice(1)],
-      thumbWebp: metadata.preview, thumbAvif: null, heroWebp: section === "projects" ? metadata.original : metadata.preview, heroAvif: null,
-      poster: metadata.preview, video: isVideo ? metadata.original : null, sourceMediaType: isVideo ? "video" : "image", videoStatus: isVideo ? "available" : null, width: preview.width, height: preview.height }),
-    } : row) })); setDirty(true); setNotice("Original and preview uploaded. Save and publish to show this file on the site.");
+    setContent((current) => ({ ...current, [section]: current[section].map((row, index) => {
+      if (index !== selected) return row;
+      const existing = galleryFrames(row);
+      const frames = (asFrame ? [...existing, frame] : [frame, ...existing.slice(1)]).map((entry, i) => ({ ...entry, position: i + 1 }));
+      return normalizeGalleryMedia({ ...row, mediaId: metadata.id, frames, sourceMediaType: isVideo ? "video" : "image", videoStatus: isVideo ? "available" : null }, section === "projects");
+    }) })); setDirty(true); setNotice("Original and preview uploaded. Save and publish to show this file on the site.");
     if (fileRef.current) fileRef.current.value = "";
+  });
+  const uploadPoster = (file) => run("Preparing thumbnail…", async () => {
+    if (!file || !item) return;
+    const mime = validateUpload(file);
+    if (!mime.startsWith("image/")) throw new Error("Choose an image for the video thumbnail.");
+    const preview = await previewBlob(file, mime);
+    const metadata = await request("/api/admin/media", "POST", { filename: file.name, mime, size: file.size, previewMime: preview.blob.type, previewSize: preview.blob.size });
+    await putFile(`/api/admin/media/${metadata.id}/original`, file, mime, "Uploading thumbnail original");
+    await putFile(`/api/admin/media/${metadata.id}/preview`, preview.blob, preview.blob.type, "Uploading thumbnail");
+    const frames = galleryFrames(item).map((frame, index) => index === 0 ? { ...frame, thumbWebp: metadata.preview, thumbAvif: null, poster: metadata.preview } : frame);
+    updateFrames(frames); setNotice("Thumbnail changed. Your video is unchanged. Save and publish when ready.");
   });
   const uploadAvatar = (file) => run("Uploading profile image", async () => {
     if (!file) return;
@@ -153,6 +168,57 @@ export default function PortfolioAdmin({ initialContent = EMPTY }) {
     await request(`/api/admin/media/${metadata.id}/preview`, "PUT", preview.blob, { "Content-Type": preview.blob.type });
     patchProfile("avatarUrl", metadata.preview); setNotice("Profile image uploaded. Save and publish to update your portfolio.");
   });
+
+  const changeSection = (next) => { setSection(next); setSelected(0); setSearch(""); setFilter("all"); setMobileEditing(false); };
+  const chooseWork = (index) => { setSelected(index); setMobileEditing(true); requestAnimationFrame(() => { editorRef.current?.focus({ preventScroll: true }); if (window.matchMedia("(max-width: 760px)").matches) editorRef.current?.closest(".cms-page")?.scrollTo({ top: 0 }); }); };
+  const addWork = () => {
+    const id = Math.max(0, ...content.projects.map((row) => Number(row.id) || 0)) + 1;
+    const group = section === "sketches" ? "chapter" : "category";
+    const choices = section === "sketches" ? content.profile.sketchChapters : content.profile.editorialCategories;
+    const row = { ...(section === "projects" ? { id, roles: [], tools: [], extraLinks: [] } : { [group]: choices?.[0]?.id || "" }), slug: `new-work-${crypto.randomUUID().slice(0, 8)}`, title: "Untitled work", note: "", order: rows.length, highlight: false, nsfw: false, mediaType: "image" };
+    setContent((current) => ({ ...current, [section]: [...current[section], row] })); setSelected(rows.length); setDirty(true); setSearch(""); setFilter("all"); setMobileEditing(true);
+  };
+  const updateFrames = (frames) => { setContent((current) => ({ ...current, [section]: current[section].map((row, index) => index === selected ? normalizeGalleryMedia({ ...row, frames: frames.map((frame, i) => ({ ...frame, position: i + 1 })) }, section === "projects") : row) })); setDirty(true); };
+  const moveFrame = (from, to) => { const frames = [...galleryFrames(item)]; const [frame] = frames.splice(from, 1); frames.splice(to, 0, frame); updateFrames(frames); };
+  const moveWork = (delta) => {
+    const destination = selected + delta;
+    if (destination < 0 || destination >= rows.length) return;
+    setContent((current) => { const next = [...current[section]]; const [row] = next.splice(selected, 1); next.splice(destination, 0, row); return { ...current, [section]: next.map((entry, index) => ({ ...entry, order: index })) }; });
+    setSelected(destination); setDirty(true);
+  };
+  const refine = () => run("Reviewing your draft with AI…", async () => {
+    const suggestions = [], warnings = [], seen = new Set();
+    let cursor = 0;
+    do {
+      if (seen.has(cursor)) throw new Error("The review stopped unexpectedly. Your draft has not changed. Try again.");
+      seen.add(cursor);
+      const result = await request("/api/admin/refine", "POST", { content, cursor });
+      suggestions.push(...(result.suggestions || [])); warnings.push(...(result.warnings || []));
+      setBusy(`Reviewing your draft… ${result.reviewedFields || 0} of ${result.totalFields || 0} fields`);
+      cursor = result.nextCursor ?? null;
+    } while (cursor !== null);
+    setRefinements(suggestions.map((suggestion) => ({ ...suggestion, selected: true })));
+    setRefineWarnings([...new Set(warnings)]); refineRef.current?.showModal();
+  });
+  const applySuggestions = () => {
+    const result = applyRefinements(content, refinements.filter((suggestion) => suggestion.selected));
+    if (result.applied) { setContent(result.content); setDirty(true); }
+    setNotice(`${result.applied} suggestions applied to the draft.${result.skipped ? ` ${result.skipped} outdated suggestions were skipped.` : ""} Review and publish when ready.`);
+    refineRef.current?.close();
+  };
+  const publish = () => run("Publishing…", async () => {
+    const next = dirty ? await save() : revision;
+    const data = await request("/api/admin/publish", "POST", { expectedRevision: next });
+    setPublishedRevision(next); setHistory((current) => current.map((entry) => entry.revision === next ? { ...entry, published_at: data.publishedAt } : entry));
+    setNotice("Published. Your website is up to date."); publishRef.current?.close();
+  });
+  const visibleRows = rows.map((row, index) => ({ row, index })).filter(({ row }) =>
+    `${row.title} ${row.client || ""} ${row.medium || ""}`.toLowerCase().includes(search.toLowerCase()) &&
+    (filter === "all" || filter === "video" && galleryFrames(row).some((frame) => frame.mediaType === "video") || filter === "highlight" && row.highlight || filter === "sensitive" && row.nsfw));
+  const categories = section === "sketches" ? content.profile.sketchChapters || [] : section === "editorial" ? content.profile.editorialCategories || [] :
+    [...new Set(["Product renders", "Animation", "Interactive 3D", "Studies", ...content.projects.map((project) => project.category).filter(Boolean)])].map((category) => ({ id: category, label: category }));
+  const frames = item ? galleryFrames(item) : [];
+  const selectedFrame = frames[0];
 
   if (session === null) return <main className="cms-page"><p role="status">Opening the editor…</p></main>;
   if (!session.authenticated) return <main className="cms-page cms-login"><a className="cms-back" href="/">← Portfolio</a><form onSubmit={login}>
@@ -165,20 +231,27 @@ export default function PortfolioAdmin({ initialContent = EMPTY }) {
     {!session.initialized && !setupToken && <p className="cms-muted">Use your private first-password link to activate this account.</p>}
     <p className="cms-muted">Password recovery is handled privately by the site administrator.</p>
   </form></main>;
-  return <main className="cms-page">
-    <header className="cms-header"><div><a className="cms-back" href="/">← Portfolio</a><p className="cms-eyebrow">Owner editor</p><h1>Your work, your words.</h1><p className="cms-muted">Draft {revision} · {publishedRevision === null ? "Not published yet" : `Live revision ${publishedRevision}`} {dirty ? "· Unsaved changes" : "· Saved"}</p></div>
-      <div className="cms-actions"><button disabled={Boolean(busy) || !dirty} onClick={() => run("Saving draft", async () => { await save(); setNotice("Draft saved. The live site has not changed."); })}>Save draft</button>
-        <button className="cms-primary" disabled={Boolean(busy)} onClick={() => run("Publishing", async () => { const next = dirty ? await save() : revision; const data = await request("/api/admin/publish", "POST", { expectedRevision: next }); setPublishedRevision(next); setHistory((current) => current.map((entry) => entry.revision === next ? { ...entry, published_at: data.publishedAt } : entry)); setNotice("Published. Your portfolio now uses this revision."); })}>Publish</button>
-        <button onClick={() => run("Signing out", async () => { await request("/api/auth/logout", "POST", {}); setSession({ authenticated: false, initialized: true }); })} disabled={Boolean(busy)}>Sign out</button></div>
+  return <main className={`cms-page${section === "sketches" ? " cms-paper" : ""}`}>
+    <header className="cms-header">
+      <div className="cms-header-main"><a className="cms-brand" href="/" target="_blank" rel="noreferrer">Ashvini</a><div><h1 className="cms-heading">Your studio</h1><p className="cms-status" role="status">{!loaded ? "Loading your saved work…" : dirty ? "Unsaved changes" : revision !== publishedRevision ? "Draft saved · ready to publish" : "Everything is live"}</p></div></div>
+      <div className="cms-actions">
+        <a className="cms-view-site" href="/" target="_blank" rel="noreferrer">View website ↗</a>
+        <button disabled={!!busy || !loaded} onClick={refine}>Refine with AI</button>
+        <button disabled={!!busy || !dirty || !loaded} onClick={() => run("Saving draft…", async () => { await save(); setNotice("Draft saved. Publish when you’re ready."); })}>Save draft</button>
+        <button className="cms-primary" disabled={!!busy || !loaded || (!dirty && revision === publishedRevision)} onClick={() => publishRef.current?.showModal()}>Publish</button>
+      </div>
     </header>
-    {error && <div className="cms-banner cms-error" role="alert">{error} <button onClick={() => run("Reloading draft", loadDraft)}>Reload saved draft</button></div>}
+    {error && <div className="cms-banner cms-error" role="alert">{error}<button onClick={() => { if (!dirty || window.confirm("Reload the saved draft and discard unsaved changes?")) run("Reloading draft…", loadDraft); }}>Reload saved draft</button></div>}
     {(notice || busy) && <p className="cms-banner" role="status">{busy || notice}</p>}
-    <nav className="cms-tabs" aria-label="Editor sections">{COLLECTIONS.map((name) => <button key={name} aria-pressed={section === name} disabled={Boolean(busy)} onClick={() => { setSection(name); setSelected(0); }}>{name === "profile" ? "Profile & pages" : name}</button>)}</nav>
-    <div className="cms-workspace" inert={Boolean(busy) || undefined}>
-      {section === "profile" ? <section className="cms-panel"><h2>Profile & page text</h2><div className="cms-fields">{PROFILE_TEXT.map(([key, label]) => <FormField key={key} label={label} value={content.profile[key]} onChange={(value) => patchProfile(key, value)} multiline={/(Description|Bio|Intro|Note)$/.test(key)} />)}</div>
-        <label className="cms-upload"><span>Upload profile image</span><input type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif" onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; uploadAvatar(file); }} /><small>The full original is retained alongside the profile preview.</small></label>
-        <FormField label="Skills (one per line)" multiline value={(content.profile.skills || []).join("\n")} onChange={(value) => patchProfile("skills", value.split("\n").filter(Boolean))} />
-        <FormField label="Home hero project ID (optional)" type="number" value={content.profile.homeHeroProjectId} onChange={(value) => patchProfile("homeHeroProjectId", value ? Number(value) : null)} />
+    <nav className="cms-tabs" aria-label="Editor sections">{COLLECTIONS.map((name) => <button key={name} aria-pressed={section === name} disabled={!!busy} onClick={() => changeSection(name)}>{LABELS[name]}{name !== "profile" && <span>{content[name]?.length || 0}</span>}</button>)}</nav>
+    <div className="cms-workspace" data-editing={mobileEditing || section === "profile"} inert={!!busy || !loaded || undefined}>
+      {section === "profile" ? <section className="cms-panel cms-profile-group">
+        <h2>Page text & profile</h2><p className="cms-muted">Choose a page, change the words, then save your draft.</p>
+        <nav className="cms-page-tabs" aria-label="Pages">{Object.keys(PAGE_GROUPS).map((page) => <button aria-pressed={profilePage === page} key={page} onClick={() => setProfilePage(page)}>{page === "editorial" ? "Social" : page === "sketches" ? "Sketchbook" : page[0].toUpperCase() + page.slice(1)}</button>)}</nav>
+        <div className="cms-fields">{PROFILE_TEXT.filter(([key]) => PAGE_GROUPS[profilePage].includes(key)).map(([key, label]) => <FormField key={key} label={label} value={content.profile[key]} onChange={(value) => patchProfile(key, value)} multiline={/(Description|Bio|Intro|Note)$/.test(key)} />)}</div>
+        {profilePage === "about" && <><label className="cms-upload"><span>Change profile photo</span><input type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; uploadAvatar(file); }} /></label><AdminTags label="Skills" value={content.profile.skills || []} onChange={(value) => patchProfile("skills", value)} placeholder="Spline, Blender, Photoshop" /></>}
+        {profilePage === "home" && <label className="cms-field"><span>Featured work on Home</span><select value={content.profile.homeHeroProjectId || ""} onChange={(event) => patchProfile("homeHeroProjectId", event.target.value ? Number(event.target.value) : null)}><option value="">Rotate through my work</option>{content.projects.map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}</select></label>}
+        <details className="cms-advanced"><summary>Experience, credits & gallery settings</summary>
         <ArrayEditor label="Experience" value={content.profile.experience} fields={[["years", "Years"], ["org", "Organization"], ["role", "Role"], ["note", "Description"], ["side", "Section"]]} onChange={(value) => patchProfile("experience", value)} />
         <ArrayEditor label="Questions & answers" value={content.profile.faq} fields={[["q", "Question"], ["a", "Answer"]]} onChange={(value) => patchProfile("faq", value)} />
         <fieldset className="cms-array"><legend>Publisher experience</legend>{(content.profile.publishers || []).map((publisher, index) => {
@@ -192,31 +265,61 @@ export default function PortfolioAdmin({ initialContent = EMPTY }) {
         <ArrayEditor label="Additional Contra work" value={content.profile.caseStudies} fields={[["title", "Title"], ["url", "URL"]]} onChange={(value) => patchProfile("caseStudies", value)} />
         <ArrayEditor label="Sketchbook timeline" value={content.profile.sketchTimeline} fields={[["year", "Year"], ["note", "Description"], ["slug", "Related sketch URL name"]]} onChange={(value) => patchProfile("sketchTimeline", value)} />
         <fieldset className="cms-array"><legend>Search previews</legend>{["home", "about", "editorial", "sketches"].map((page) => <div className="cms-array-row" key={page}><h3>{page}</h3>{["title", "description"].map((key) => <FormField key={key} label={key} value={content.profile.seo?.[page]?.[key]} onChange={(value) => patchProfile("seo", { ...content.profile.seo, [page]: { ...content.profile.seo?.[page], [key]: value } })} />)}</div>)}</fieldset>
-      </section> : <><aside className="cms-list"><div className="cms-list-header"><h2>{section}</h2><button onClick={() => {
-        const id = Math.max(0, ...content.projects.map((row) => Number(row.id) || 0)) + 1;
-        const row = { ...(section === "projects" ? { id } : {}), slug: `new-work-${crypto.randomUUID().slice(0, 8)}`, title: "Untitled work", note: "", order: rows.length, highlight: false, nsfw: false, mediaType: "image", ...(section === "sketches" ? { chapter: "portraits" } : { category: "news" }) };
-        setContent((current) => ({ ...current, [section]: [...current[section], row] })); setSelected(rows.length); setDirty(true);
-      }}>Add work</button></div>{rows.map((row, index) => <button className="cms-list-item" key={row.slug || index} aria-pressed={selected === index} onClick={() => setSelected(index)}><span>{row.title}</span><small>{row.nsfw ? "Sensitive content" : row.mediaType || "image"} · {row.slug}</small></button>)}</aside>
-        <section className="cms-panel">{item ? <><div className="cms-item-head"><h2>{item.title}</h2><button className="cms-text-button" onClick={() => { setContent((current) => ({ ...current, [section]: current[section].filter((_, index) => index !== selected) })); setSelected(Math.max(0, selected - 1)); setDirty(true); }}>Remove from draft</button></div>
-          {(item.poster || item.thumbWebp || item.heroWebp) && <img className="cms-preview" src={item.poster || item.thumbWebp || item.heroWebp} alt={item.title} />}
-          <label className="cms-upload"><span>Upload original image or video</span><input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif,video/mp4,video/webm,video/quicktime" onChange={(event) => upload(event.target.files?.[0])} /><small>Images up to 30 MB · videos up to 80 MB. The original stays at full quality; a separate preview is generated.</small></label>
-          <div className="cms-fields">{ROW_TEXT.map(([key, label]) => {
-            const field = key === "date" && section === "sketches" ? "dateISO" : key;
-            const value = key === "date" && typeof item[field] === "string" ? item[field].slice(0, 10) : item[field];
-            return <FormField key={key} label={label} value={value} onChange={(next) => patchItem(field, key === "date" && !next ? null : next)} multiline={["description", "note"].includes(key)} type={key === "date" ? "date" : "text"} />;
-          })}
-            <FormField label={section === "sketches" ? "Chapter" : "Category"} value={item[section === "sketches" ? "chapter" : "category"]} onChange={(value) => patchItem(section === "sketches" ? "chapter" : "category", value)} />
-            <FormField label="Display order" type="number" value={item.order} onChange={(value) => patchItem("order", Number(value))} />
-            {section === "sketches" && <FormField label="Year" type="number" value={item.year} onChange={(value) => patchItem("year", value ? Number(value) : null)} />}
-          </div><div className="cms-checks"><label><input type="checkbox" checked={Boolean(item.highlight)} onChange={(event) => patchItem("highlight", event.target.checked)} /> Highlight this work</label><label><input type="checkbox" checked={Boolean(item.nsfw)} onChange={(event) => patchItem("nsfw", event.target.checked)} /> Sensitive / NSFW artwork (show a viewing gate)</label></div>
-          {section === "projects" && <><FormField label="Roles (one per line)" multiline value={(item.roles || []).join("\n")} onChange={(value) => patchItem("roles", value.split("\n").filter(Boolean))} /><FormField label="Tools (one per line)" multiline value={(item.tools || []).join("\n")} onChange={(value) => patchItem("tools", value.split("\n").filter(Boolean))} /><FormField label="Spline scene URL" value={item.splineScene} onChange={(value) => patchItem("splineScene", value)} /><FormField label="External project URL" value={item.externalLink} onChange={(value) => patchItem("externalLink", value)} /><FormField label="Contra case-study URL" value={item.contraUrl} onChange={(value) => patchItem("contraUrl", value)} /></>}
-          {section === "projects" && <ArrayEditor label="Additional project links" value={item.extraLinks} fields={[["label", "Label"], ["url", "URL"]]} onChange={(value) => patchItem("extraLinks", value)} />}
-          {section === "projects" && <FormField label="Outcome" value={item.outcome} onChange={(value) => patchItem("outcome", value)} />}
-          <ArrayEditor label="Source credits" value={item.sources} fields={[["label", "Credit"], ["url", "URL"]]} onChange={(value) => patchItem("sources", value)} />
-          <ArrayEditor label="Additional gallery frames" value={item.frames} fields={[["asset", "Original media path"], ["thumbWebp", "Preview media path"], ["width", "Width", "number"], ["height", "Height", "number"], ["position", "Position", "number"], ["sourceUrl", "Source URL"], ["contentWarning", "Content warning (if needed)"]]} onChange={(value) => patchItem("frames", value)} />
-          <label className="cms-upload"><span>Add an original image or video as another frame</span><input type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif,video/mp4,video/webm,video/quicktime" onChange={(event) => upload(event.target.files?.[0], true)} /><small>Additional frames keep their own originals and previews.</small></label>
-        </> : <p>Select a work or add a new one.</p>}</section></>}
+        </details>
+      </section> : <>
+        <aside className="cms-list">
+          <div className="cms-section-top"><div><h2>{LABELS[section]}</h2><p className="cms-muted">{rows.length} pieces · select one to edit</p></div><button className="cms-primary" onClick={addWork}>+ Add work</button></div>
+          <label className="cms-search"><span className="sr-only">Search your work</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find a piece…" /></label>
+          <div className="cms-filters" aria-label="Filter work">{[["all", "All"], ["video", "Videos"], ["highlight", "Highlights"], ["sensitive", "Sensitive"]].map(([value, label]) => <button key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}</div>
+          {visibleRows.map(({ row, index }) => <button className="cms-list-item" key={row.slug || index} aria-pressed={selected === index} onClick={() => chooseWork(index)}>
+            <span className={`cms-list-thumb${row.nsfw ? " cms-sensitive" : ""}`}>{(row.thumbWebp || row.poster) ? <img src={row.thumbWebp || row.poster} alt="" loading="lazy" /> : <span>+</span>}</span>
+            <span><strong className="cms-item-title">{row.title}</strong><small className="cms-item-meta">{galleryFrames(row).some((frame) => frame.mediaType === "video") ? "Video" : "Image"}{row.highlight ? " · Highlight" : ""}{row.nsfw ? " · Sensitive" : ""}{!row.thumbWebp ? " · Needs media" : ""}</small></span>
+          </button>)}
+          {!visibleRows.length && <div className="cms-empty"><p>{rows.length ? "No work matches this search." : "Add your first piece here."}</p><button onClick={rows.length ? () => { setSearch(""); setFilter("all"); } : addWork}>{rows.length ? "Clear filters" : "Add work"}</button></div>}
+        </aside>
+        <section className="cms-panel" ref={editorRef} tabIndex={-1}>{item ? <>
+          <button className="cms-back-to-list" onClick={() => setMobileEditing(false)}>← All {LABELS[section]}</button>
+          <div className="cms-item-head"><h2>{item.title}</h2><div className="cms-media-actions"><button disabled={selected === 0} onClick={() => moveWork(-1)} aria-label="Move work earlier">↑</button><button disabled={selected === rows.length - 1} onClick={() => moveWork(1)} aria-label="Move work later">↓</button></div></div>
+          <div className="cms-media-stage">
+            {selectedFrame ? selectedFrame.mediaType === "video" ? <VideoPlayer src={selectedFrame.video || selectedFrame.full || selectedFrame.asset} poster={selectedFrame.poster || selectedFrame.thumbWebp} title={`Preview ${item.title}`} width={selectedFrame.width} height={selectedFrame.height} /> : <img className="cms-preview" src={selectedFrame.thumbWebp || item.thumbWebp} alt={item.title} /> : <div className="cms-empty"><strong>Start with your work.</strong><p>Add an image or a video render. You can arrange more frames below.</p></div>}
+          </div>
+          <label className="cms-upload"><span>{selectedFrame ? "Replace cover image / video" : "Upload an image or video"}</span><input ref={fileRef} type="file" accept={ACCEPT_MEDIA} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; upload(file); }} /><small>Images up to 30 MB. Videos up to 80 MB. MP4 with H.264 works best; WebM and playable MOV files also work. Your original is kept unchanged.</small></label>
+          {selectedFrame?.mediaType === "video" && <label className="cms-upload cms-upload-help"><span>Upload thumbnail</span><input type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; uploadPoster(file); }} /><small>Choose the cover shown in your work grid and before the video plays. Transparent images keep their transparency.</small></label>}
+          {frames.length > 0 && <div className="cms-frame-strip" aria-label="Gallery frames">{frames.map((frame, index) => <div className="cms-frame" key={`${frame.full || frame.asset}-${index}`}>
+            <img src={frame.thumbWebp || frame.poster} alt={`Frame ${index + 1}`} loading="lazy" />
+            <span className="cms-frame-cover">{index === 0 ? "Cover" : `Frame ${index + 1}`}{frame.mediaType === "video" ? " · Video" : ""}</span>
+            <div className="cms-frame-actions"><button disabled={index === 0} onClick={() => moveFrame(index, index - 1)} aria-label={`Move frame ${index + 1} earlier`}>←</button><button disabled={index === frames.length - 1} onClick={() => moveFrame(index, index + 1)} aria-label={`Move frame ${index + 1} later`}>→</button>{index > 0 && <button onClick={() => moveFrame(index, 0)}>Make cover</button>}{frames.length > 1 && <button onClick={() => updateFrames(frames.filter((_, i) => i !== index))} aria-label={`Remove frame ${index + 1}`}>×</button>}</div>
+          </div>)}</div>}
+          <label className="cms-upload cms-upload-help"><span>+ Add another image or video</span><input type="file" accept={ACCEPT_MEDIA} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; upload(file, true); }} /></label>
+          <div className="cms-fields">
+            <FormField label="Title" value={item.title} onChange={(value) => patchItem("title", value)} />
+            <label className="cms-field"><span>{section === "sketches" ? "Sketchbook section" : "Category"}</span><select value={item[section === "sketches" ? "chapter" : "category"] || ""} onChange={(event) => patchItem(section === "sketches" ? "chapter" : "category", event.target.value)}><option value="" disabled>Choose where this belongs</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}</select></label>
+            <FormField label="Caption" multiline value={item.note} onChange={(value) => patchItem("note", value)} />
+            <FormField label="Description" multiline value={item.description} onChange={(value) => patchItem("description", value)} />
+            {section !== "sketches" && <FormField label="Client / publisher" value={item.client} onChange={(value) => patchItem("client", value)} />}
+            {section === "sketches" && <><FormField label="Medium" value={item.medium} onChange={(value) => patchItem("medium", value)} /><FormField label="Artwork year" type="number" value={item.year} onChange={(value) => patchItem("year", value ? Number(value) : null)} /></>}
+            <FormField label="Original post link (optional)" value={item.url} onChange={(value) => patchItem("url", value)} />
+          </div>
+          <div className="cms-checks"><label><input type="checkbox" checked={!!item.highlight} onChange={(event) => patchItem("highlight", event.target.checked)} /> Show in Highlights</label><label><input type="checkbox" checked={!!item.nsfw} onChange={(event) => patchItem("nsfw", event.target.checked)} /> Blur and warn before viewing</label></div>
+          {item.nsfw && <FormField label="Viewing warning" value={item.contentWarning} onChange={(value) => patchItem("contentWarning", value)} />}
+          {section === "projects" && <><AdminTags label="Tools" value={item.tools || []} onChange={(value) => patchItem("tools", value)} placeholder="Blender, Spline, After Effects" /><AdminTags label="Your roles" value={item.roles || []} onChange={(value) => patchItem("roles", value)} placeholder="3D modelling, Animation" /></>}
+          <details className="cms-advanced"><summary>More details & links</summary>
+            {ROW_TEXT.filter(([key]) => ["slug", "date", "dateLabel", "platform"].includes(key)).map(([key, label]) => { const field = key === "date" && section === "sketches" ? "dateISO" : key; return <FormField key={key} label={label} type={key === "date" ? "date" : "text"} value={key === "date" ? item[field]?.slice(0, 10) : item[field]} onChange={(value) => patchItem(field, key === "date" && !value ? null : value)} />; })}
+            {section === "projects" && <><FormField label="Spline scene URL" value={item.splineScene} onChange={(value) => patchItem("splineScene", value)} /><p className="cms-muted">Uploaded frames take priority over the interactive scene.</p><FormField label="External project URL" value={item.externalLink} onChange={(value) => patchItem("externalLink", value)} /><FormField label="Contra case-study URL" value={item.contraUrl} onChange={(value) => patchItem("contraUrl", value)} /><FormField label="Outcome" value={item.outcome} onChange={(value) => patchItem("outcome", value)} /><ArrayEditor label="Additional links" value={item.extraLinks} fields={[["label", "Label"], ["url", "URL"]]} onChange={(value) => patchItem("extraLinks", value)} /></>}
+            <ArrayEditor label="Source credits" value={item.sources} fields={[["label", "Credit"], ["url", "URL"]]} onChange={(value) => patchItem("sources", value)} />
+            <details><summary>Original media paths</summary><ArrayEditor label="Frames" value={item.frames} fields={[["asset", "Original media path"], ["thumbWebp", "Preview path"], ["mediaType", "Media type: image or video"], ["sourceUrl", "Source link"]]} onChange={(value) => updateFrames(value)} /></details>
+            <button className="cms-text-button" onClick={() => { if (!window.confirm(`Remove “${item.title}” from the draft? The live site stays as it is until you publish.`)) return; setContent((current) => ({ ...current, [section]: current[section].filter((_, index) => index !== selected) })); setSelected(Math.max(0, selected - 1)); setDirty(true); setMobileEditing(false); }}>Remove this work from draft</button>
+          </details>
+        </> : <div className="cms-empty"><h2>Choose a piece to edit</h2><button className="cms-primary" onClick={addWork}>Add work</button></div>}</section>
+      </>}
     </div>
-    {history.length > 0 && <details className="cms-history"><summary>Saved revisions</summary><p>Restoring a revision updates the draft. Publish it to update the site.</p>{history.map((entry) => <div key={entry.revision}><span>Revision {entry.revision} · {entry.action} · {new Date(entry.created_at * 1000).toLocaleString()}{entry.published_at ? " · published" : ""}</span><button disabled={Boolean(busy)} onClick={() => run("Restoring revision", async () => { await request("/api/admin/rollback", "POST", { expectedRevision: revision, revision: entry.revision }); await loadDraft(); setNotice("Revision restored to the draft. Review it and publish when ready."); })}>Restore to draft</button></div>)}</details>}
+    <footer className="cms-footer"><p>Changes stay in your draft until you publish.</p><button disabled={!!busy} onClick={() => { if (dirty && !window.confirm("Sign out without saving these changes?")) return; run("Signing out…", async () => { await request("/api/auth/logout", "POST", {}); setSession({ authenticated: false, initialized: true }); setLoaded(false); }); }}>Sign out</button></footer>
+    {history.length > 0 && <details className="cms-history"><summary>Version history</summary><p>Restore a saved version to your draft, then publish when ready.</p>{history.map((entry) => <div key={entry.revision}><span>Version {entry.revision} · {new Date(entry.created_at * 1000).toLocaleString()}{entry.published_at ? " · Published" : ""}</span><button disabled={!!busy} onClick={() => { if (dirty && !window.confirm("Restore this version and replace your unsaved draft?")) return; run("Restoring version…", async () => { await request("/api/admin/rollback", "POST", { expectedRevision: revision, revision: entry.revision }); await loadDraft(); setNotice("Version restored to draft. Review it before publishing."); }); }}>Restore</button></div>)}</details>}
+    <dialog ref={publishRef} className="cms-publish-dialog"><h2>Publish your changes?</h2>{error && <p role="alert" className="cms-error">{error}</p>}<p>Your current draft will replace the live portfolio. You can restore a saved version later.</p><p>{content.projects.length} 3D pieces, {content.editorial.length} social posts, {content.sketches.length} artworks.</p><div className="cms-dialog-actions"><button disabled={!!busy} onClick={() => publishRef.current?.close()}>Keep editing</button><button className="cms-primary" disabled={!!busy} onClick={publish}>{busy || "Publish website"}</button></div></dialog>
+    <dialog ref={refineRef} className="cms-refine-dialog"><h2>Refine your draft</h2><p>Review each suggestion. Nothing changes on the live site until you publish.</p>{refineWarnings.map((warning, index) => <p key={index} className="cms-muted">{warning}</p>)}
+      {!refinements.length && <p>No wording changes were suggested.</p>}
+      {refinements.map((suggestion, index) => <label className="cms-suggestion" key={index}><input className="cms-suggestion-check" type="checkbox" checked={suggestion.selected} onChange={(event) => setRefinements((current) => current.map((entry, i) => i === index ? { ...entry, selected: event.target.checked } : entry))} /><span><strong>{suggestion.label || suggestion.path.join(" / ")}</strong><span className="cms-suggestion-before">{suggestion.before || "Empty"}</span><span className="cms-suggestion-after">{suggestion.after}</span><small>{suggestion.reason}</small></span></label>)}
+      <div className="cms-dialog-actions"><button onClick={() => refineRef.current?.close()}>Keep my wording</button><button className="cms-primary" disabled={!refinements.some((suggestion) => suggestion.selected)} onClick={applySuggestions}>Apply selected to draft</button></div>
+    </dialog>
   </main>;
 }

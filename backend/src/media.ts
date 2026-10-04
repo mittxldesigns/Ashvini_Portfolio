@@ -26,7 +26,7 @@ export async function createMedia(env: Env, request: Request) {
   if (typeof mime !== "string" || ![...IMAGES,...VIDEOS].includes(mime)) throw new HttpError(415,"media_type_invalid","Upload JPEG, PNG, WebP, AVIF, GIF, MP4, MOV or WebM.");
   const max = VIDEOS.includes(mime) ? VIDEO_LIMIT : IMAGE_LIMIT;
   if (!Number.isSafeInteger(size) || Number(size) < 16 || Number(size) > max) throw new HttpError(413,"media_too_large",`The original must be smaller than ${max / 1024 / 1024} MB.`);
-  if (!["image/jpeg","image/webp"].includes(String(previewMime)) || !Number.isSafeInteger(previewSize) || Number(previewSize) < 16 || Number(previewSize) > PREVIEW_LIMIT) throw new HttpError(422,"preview_invalid","Create a JPEG or WebP preview smaller than 2 MB.");
+  if (!["image/jpeg","image/webp","image/png"].includes(String(previewMime)) || !Number.isSafeInteger(previewSize) || Number(previewSize) < 16 || Number(previewSize) > PREVIEW_LIMIT) throw new HttpError(422,"preview_invalid","Create a JPEG, WebP or PNG preview smaller than 2 MB.");
   const id = crypto.randomUUID();
   await env.DB.prepare(`INSERT INTO cms_media(id,filename,mime,size,preview_mime,preview_size,created_at) VALUES (?,?,?,?,?,?,?)`).bind(id,filename,mime,size,previewMime,previewSize,now()).run();
   return json({id,original:`/media/${id}/original`,preview:`/media/${id}/preview`,mime,size},201);

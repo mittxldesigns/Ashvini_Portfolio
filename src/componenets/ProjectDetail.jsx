@@ -91,6 +91,9 @@ export default function ProjectDetail() {
     if (!stage || !window.matchMedia("(hover: hover)").matches) return;
     let raf = 0;
     const onMove = (e) => {
+      if (stage.querySelector("video")) {
+        stage.style.setProperty("--ry", "0deg"); stage.style.setProperty("--rx", "0deg"); return;
+      }
       const r = stage.getBoundingClientRect();
       const x = (e.clientX - r.left) / r.width - 0.5;
       const y = (e.clientY - r.top) / r.height - 0.5;
@@ -228,7 +231,7 @@ export default function ProjectDetail() {
             className={[
               "project-hero",
               !arrivedByMorph && "is-intro",
-              liveId === project.id && "is-live",
+              !frame && liveId === project.id && "is-live",
             ]
               .filter(Boolean)
               .join(" ")}
@@ -272,7 +275,7 @@ export default function ProjectDetail() {
             </nav>}
             <LiveScene
               key={project.id}
-              url={project.splineScene}
+              url={frame ? null : project.splineScene}
               onLive={onLive}
             />
           </div>

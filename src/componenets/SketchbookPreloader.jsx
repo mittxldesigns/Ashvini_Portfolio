@@ -19,7 +19,10 @@ export default function SketchbookPreloader({ playing, pageRef, onReveal, onDone
   }, []);
 
   useEffect(() => {
-    const onWheel = (event) => { event.preventDefault(); event.stopPropagation(); };
+    const onWheel = (event) => {
+      if (!event.ctrlKey && !event.metaKey) event.preventDefault();
+      event.stopPropagation();
+    };
     const onKey = (event) => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -27,7 +30,7 @@ export default function SketchbookPreloader({ playing, pageRef, onReveal, onDone
         onDone();
       } else if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
         // Project-detail shortcuts must not navigate underneath the loader.
-        event.preventDefault();
+        if (!event.altKey && !event.ctrlKey && !event.metaKey) event.preventDefault();
         event.stopPropagation();
       }
     };

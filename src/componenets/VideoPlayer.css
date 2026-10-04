@@ -1,0 +1,49 @@
+.video-player {
+  --vp-accent: #008fef;
+  position: relative;
+  width: min(100%, calc(var(--vp-max-height, 72vh) * var(--vp-ratio, 1.777778)));
+  max-width: 100%; margin-inline: auto; overflow: hidden; border-radius: 10px;
+  color: var(--vp-ink, #f3f5f7); background: var(--vp-media-bg, #0c1016);
+  container-type: inline-size; isolation: isolate;
+}
+.video-player .vp-stage { position: relative; width: 100%; aspect-ratio: var(--vp-ratio, 16 / 9); overflow: hidden; }
+.video-player .vp-stage > video.vp-video,
+.video-player .vp-stage > img.vp-poster {
+  position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; max-height: none;
+  aspect-ratio: auto; object-fit: contain; transform: none; border: 0; border-radius: 0; background: transparent;
+}
+.video-player .vp-stage > img.vp-poster { z-index: 1; pointer-events: none; }
+.video-player .vp-controls {
+  display: grid; grid-template-columns: 44px minmax(36px, 1fr) auto 44px 44px; align-items: center; gap: 2px; padding: 4px;
+  background: var(--vp-controls-bg, #111721); border-top: 1px solid var(--vp-border, #ffffff1a);
+}
+.video-player .vp-controls button, .video-player .vp-error button, .video-player .vp-error a {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 8px;
+  border: 0; border-radius: 5px; background: transparent; color: inherit; font: inherit; cursor: pointer; text-decoration: none;
+}
+.video-player .vp-controls button:hover { color: var(--vp-accent); background: var(--vp-hover, #ffffff09); }
+.video-player .vp-controls button:disabled { opacity: .4; cursor: default; }
+.video-player .vp-controls button:focus-visible, .video-player .vp-seek:focus-visible,
+.video-player .vp-error button:focus-visible, .video-player .vp-error a:focus-visible { outline: 2px solid var(--vp-accent); outline-offset: -2px; }
+.video-player .vp-controls svg { display: block; width: 17px; height: 17px; }
+.video-player .vp-seek { width: 100%; min-width: 0; min-height: 44px; margin: 0; padding: 0; border: 0; background: transparent; box-shadow: none; accent-color: var(--vp-accent); cursor: pointer; }
+.video-player .vp-time { margin-inline: 5px; font: 10px/1.2 ui-monospace, monospace; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.video-player .vp-loading { position: absolute; z-index: 2; top: 10px; left: 10px; padding: 5px 8px; border-radius: 4px; background: #10151dcc; color: #fff; font-size: 11px; line-height: 1.4; }
+.video-player .vp-error { position: absolute; z-index: 3; inset: 0; display: flex; flex-direction: column; justify-content: center; padding: 20px; background: var(--vp-controls-bg, #111721e8); }
+.video-player .vp-error p { margin: 0 0 8px; font-size: 12px; line-height: 1.5; }
+.video-player .vp-error > div { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.video-player .vp-error button, .video-player .vp-error a { color: var(--vp-accent); font-size: 12px; }
+.video-player .vp-notice { margin: 0; padding: 7px 12px; color: inherit; background: var(--vp-controls-bg, #111721); font-size: 11px; line-height: 1.4; }
+.video-player:fullscreen, .video-player:-webkit-full-screen { display: grid; grid-template-rows: minmax(0, 1fr) auto; width: 100%; height: 100%; border-radius: 0; }
+.video-player:fullscreen .vp-stage, .video-player:-webkit-full-screen .vp-stage { height: 100%; aspect-ratio: auto; }
+.sk-lightbox .video-player { --vp-media-bg: #f4f0e9; --vp-controls-bg: #f7f3eb; --vp-ink: #292e32; --vp-border: #2238471c; --vp-accent: #397ca7; --vp-hover: #397ca70b; }
+.sk-lightbox-image .video-player { --vp-max-height: calc(var(--image-limit, 72vh) - 72px); }
+@container (max-width: 280px) {
+  .video-player .vp-controls { grid-template-columns: 44px minmax(0, 1fr) 44px 44px; }
+  .video-player .vp-time { grid-column: 2; grid-row: 2; margin: 0 0 4px; }
+  .video-player .vp-mute { grid-column: 3; grid-row: 1; }
+  .video-player .vp-fullscreen { grid-column: 4; grid-row: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .video-player, .video-player * { scroll-behavior: auto; animation: none; transition: none; }
+}

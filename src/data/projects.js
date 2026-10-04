@@ -1,3 +1,4 @@
+import { reviewedSticker } from "../lib/projectSticker.js";
 import { CONTRA_PROFILE, pieces } from "./projectContent.js";
 export { CONTRA_PROFILE } from "./projectContent.js";
 
@@ -64,7 +65,7 @@ const avifCheck = new Promise((resolve) => {
 
 // Only meaningful once an item has loaded (loading waits for the AVIF check).
 export function thumbSrc(project) {
-  return avifSupported && project.thumbAvif ? project.thumbAvif : project.thumbWebp;
+  return reviewedSticker(project) || (avifSupported && project.thumbAvif ? project.thumbAvif : project.thumbWebp);
 }
 
 const loadedIds = new Set();

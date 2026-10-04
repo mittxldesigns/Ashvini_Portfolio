@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import VideoPlayer from "./VideoPlayer.jsx";
 import { getSiteProfile } from "../data/siteProfile.js";
 import { sketchImageDimensions } from "../data/sketchImageDimensions.js";
 import { fullSketchImages } from "../lib/sketchImageCache.js";
@@ -36,7 +37,7 @@ export default function SketchLightboxImage({ item, previewSrc }) {
       data-image-quality={source === item.full ? "full" : "preview"}
       style={{ "--image-width": `${width || 800}px`, "--image-ratio": width && height ? width / height : 1 }}
     >
-      {item.mediaType === "video" ? <video src={item.video || item.full} poster={item.poster || preview} controls playsInline preload="metadata" aria-label={`${item.title}, by ${getSiteProfile().name}`} /> : <img
+      {item.mediaType === "video" ? <VideoPlayer src={item.video || item.full} poster={item.poster || preview} title={`${item.title}, by ${getSiteProfile().name}`} width={width} height={height} /> : <img
         src={source}
         width={width}
         height={height}
@@ -45,7 +46,7 @@ export default function SketchLightboxImage({ item, previewSrc }) {
         fetchPriority="high"
         onError={() => { setFailed(true); if (source === item.full) setSource(preview); }}
       />}
-      {failed && <p className="sk-image-retry" role="status">Image didn’t finish loading. <button type="button" onClick={retry}>Try again</button></p>}
+      {failed && item.mediaType !== "video" && <p className="sk-image-retry" role="status">Image didn’t finish loading. <button type="button" onClick={retry}>Try again</button></p>}
     </div>
   );
 }

@@ -16,6 +16,7 @@ import {
 import { gridState } from "../lib/gridState.js";
 import { getSiteProfile } from "../data/siteProfile.js";
 import { tagSharedElement, withViewTransition } from "../lib/viewTransition.js";
+import "./GridStickers.css";
 
 const EASE = 0.2; // fraction of remaining distance covered per 60fps frame
 const FRICTION = 0.94; // inertia decay per 60fps frame
@@ -121,7 +122,7 @@ export default function InfiniteDragGrid() {
       return (
         <Tile
           key={key}
-          className={`${isIn ? (intro ? "tile is-in" : "tile is-in is-static") : "tile"}${item.nsfw ? " is-sensitive" : ""}`}
+          className={`${isIn ? (intro ? "tile is-in" : "tile is-in is-static") : "tile"} grid-sticker${item.nsfw ? " is-sensitive" : ""}`}
           data-id={item.id}
           href={primary ? `/portfolio/${item.id}` : undefined}
           aria-label={primary ? item.title : undefined}
@@ -129,7 +130,7 @@ export default function InfiniteDragGrid() {
           onClick={(event) => {
             if (primary && event.detail > 0) event.preventDefault();
           }}
-          style={{ left: x, top: y, width: tile, height: tile, "--d": `${delay}ms` }}
+          style={{ left: x, top: y, width: tile, height: tile, "--d": `${delay}ms`, "--sticker-mask": `url("${thumbSrc(item)}")`, "--sticker-tilt": `${item.id % 2 ? -0.8 : 0.8}deg` }}
         >
           {isIn && (
             <img
@@ -140,6 +141,7 @@ export default function InfiniteDragGrid() {
               draggable={false}
             />
           )}
+          {isIn && <span className="grid-sticker-shine" aria-hidden="true" />}
           <span className="tile-title">{item.title}</span>
         </Tile>
       );
@@ -470,6 +472,17 @@ export default function InfiniteDragGrid() {
 
   return (
     <div ref={viewportRef} className="viewport">
+      <svg className="grid-sticker-filters" width="0" height="0" aria-hidden="true" focusable="false">
+        <defs>
+          <filter id="grid-sticker-outline" x="-10%" y="-10%" width="120%" height="120%" colorInterpolationFilters="sRGB">
+            <feMorphology in="SourceAlpha" operator="dilate" radius="3.2" result="expanded-alpha" />
+            <feComposite in="expanded-alpha" in2="SourceAlpha" operator="out" result="outline-alpha" />
+            <feFlood floodColor="#ffffff" result="outline-white" />
+            <feComposite in="outline-white" in2="outline-alpha" operator="in" result="outline" />
+            <feMerge><feMergeNode in="outline" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+      </svg>
       <h1 className="sr-only">Selected 3D work by {getSiteProfile().name}</h1>
       <div ref={gridRef} className="grid">
         {tiles}

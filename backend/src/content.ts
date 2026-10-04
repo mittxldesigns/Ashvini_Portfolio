@@ -1,3 +1,4 @@
+import { normalizeGalleryMedia } from "../../src/lib/galleryMedia.js";
 import { HttpError, json, now, readJson } from "./security";
 
 export type Value = string | number | boolean | null | Value[] | {[key:string]:Value};
@@ -111,16 +112,19 @@ export function validateContent(raw: unknown, options: {publishing?:boolean} = {
         if (![frame.asset,frame.full,frame.src].some((path) => typeof path === "string" && path.trim())) bad("Every gallery frame needs an original media path.");
         if (typeof frame.asset === "string" && frame.asset.trim()) frame.full = frame.asset;
         if (frame.mediaType === "video" && typeof frame.full === "string") frame.video = frame.full;
+        if (options.publishing && frame.mediaType === "video" && ![frame.thumbWebp, frame.thumbAvif, frame.poster].some((path) => typeof path === "string" && path.trim())) bad("Upload a thumbnail for every video before publishing.");
         for (const key of URL_FIELDS) if (key !== "sourceUrls") optionalText(frame[key],`Frame ${key}`);
         realDate(frame.dateISO,"Frame date");
         for (const key of ["width","height","position"]) if (frame[key] !== undefined && frame[key] !== null && (!Number.isSafeInteger(frame[key]) || Number(frame[key]) < (key === "position" ? 0 : 1))) bad(`Frame ${key} must be a valid whole number.`);
       }
-      const first = frames[0];
+      for (const frame of frames) if (frame.mediaType !== undefined && !["image", "video"].includes(String(frame.mediaType))) bad("Choose image or video for each gallery frame.");
+      Object.assign(result, normalizeGalleryMedia(result, name === "projects"));
+      const first = (result.frames as RecordValue[] | undefined)?.[0];
       const original = first?.full || result.full || result.heroWebp || result.heroAvif;
       const preview = first?.thumbWebp || first?.thumbAvif || first?.poster || result.thumbWebp || result.thumbAvif || result.poster;
       if (typeof original === "string" && original.trim()) result.full = original;
       if (typeof preview === "string" && preview.trim()) result.thumbWebp = preview;
-      if (name === "projects" && first && typeof original === "string") result.heroWebp = original;
+      if (name === "projects" && first && typeof original === "string") result.heroWebp = first.mediaType === "video" ? preview : original;
       if (options.publishing && (!(typeof original === "string" && original.trim()) || !(typeof preview === "string" && preview.trim()))) bad(`Upload an original and a cover preview for ${result.slug} before publishing.`);
       for (const block of objectList(result.blocks,"Project content blocks")) {
         const kind = block.type || block.kind;

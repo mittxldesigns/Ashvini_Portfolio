@@ -1,3 +1,4 @@
+import { normalizeGalleryMedia } from "./galleryMedia.js";
 import { projects } from "../data/projects.js";
 import { editorialPosts, EDITORIAL_CATEGORIES } from "../data/editorial.js";
 import { sketches, SKETCH_CHAPTERS } from "../data/sketches.js";
@@ -14,20 +15,7 @@ function replaceRecords(target, incoming) {
       if (Object.hasOwn(item, "dateISO")) record.date = record.dateISO = item.dateISO;
       else if (Object.hasOwn(item, "date")) record.date = record.dateISO = item.date;
     }
-    if (record.frames) record.frames = record.frames.map((frame) => ({ ...frame, full: frame.asset || frame.full, ...(frame.mediaType === "video" ? { video: frame.asset || frame.video || frame.full } : {}) })).sort((a, b) => (a.position || 0) - (b.position || 0));
-    if (record.frames?.length) {
-      const cover = record.frames[0];
-      record.full = cover.full || record.full;
-      record.thumbWebp = cover.thumbWebp || record.thumbWebp;
-      record.thumbAvif = cover.thumbAvif || null;
-      record.width = cover.width || record.width;
-      record.height = cover.height || record.height;
-      if (target === projects || target === pieces) {
-        record.heroWebp = cover.mediaType === "video" ? cover.thumbWebp : cover.full;
-        record.heroAvif = null;
-      }
-    }
-    return record;
+    return normalizeGalleryMedia(record, target === projects || target === pieces);
   }).sort((a, b) => a.order - b.order);
   target.splice(0, target.length, ...items);
 }

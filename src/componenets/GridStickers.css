@@ -1,0 +1,66 @@
+/* The white contour follows the real transparent subject, never its image box. */
+.viewport .grid-sticker-filters { position: absolute; pointer-events: none; }
+.viewport .tile.grid-sticker > img {
+  filter: url(#grid-sticker-outline) drop-shadow(0 8px 9px rgba(0, 0, 0, .2));
+  transform-origin: 50% 60%;
+  transition: transform 220ms cubic-bezier(.2, .7, .25, 1);
+}
+.viewport .tile.grid-sticker > .grid-sticker-shine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transform-origin: 50% 60%;
+  transition: transform 220ms cubic-bezier(.2, .7, .25, 1);
+  background: linear-gradient(105deg, transparent 42%, rgba(255,255,255,.48) 49%, rgba(255,255,255,.18) 53%, transparent 58%);
+  background-size: 300% 100%;
+  background-position: 100% 50%;
+  -webkit-mask-image: var(--sticker-mask);
+  mask-image: var(--sticker-mask);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  mask-mode: alpha;
+}
+.viewport:not(.is-dragging) .tile.grid-sticker:focus-visible > :is(img, .grid-sticker-shine) {
+  transform: translateY(-5px) rotate(var(--sticker-tilt)) scale(1.025);
+}
+.viewport:not(.is-dragging) .tile.grid-sticker:focus-visible > .grid-sticker-shine {
+  animation: grid-sticker-sweep 620ms ease-out both;
+}
+@media (hover: hover) {
+  .viewport:not(.is-dragging) .tile.grid-sticker:hover > :is(img, .grid-sticker-shine) {
+    transform: translateY(-5px) rotate(var(--sticker-tilt)) scale(1.025);
+  }
+  .viewport:not(.is-dragging) .tile.grid-sticker:hover > .grid-sticker-shine {
+    animation: grid-sticker-sweep 620ms ease-out both;
+  }
+}
+@media (hover: none) {
+  .viewport .tile.grid-sticker:active > img {
+    animation: grid-sticker-tap 170ms ease-out;
+  }
+}
+.viewport.is-dragging .tile.grid-sticker > img { transform: none; transition: none; }
+.viewport.is-dragging .tile.grid-sticker > .grid-sticker-shine { opacity: 0; animation: none; transform: none; }
+.viewport .tile.grid-sticker.is-sensitive > .grid-sticker-shine { display: none; }
+@keyframes grid-sticker-sweep {
+  0% { opacity: 0; background-position: 100% 50%; }
+  18% { opacity: .44; }
+  78% { opacity: .44; }
+  100% { opacity: 0; background-position: 0% 50%; }
+}
+@keyframes grid-sticker-tap {
+  0%, 100% { transform: none; }
+  45% { transform: translateY(-3px) rotate(var(--sticker-tilt)) scale(1.015); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .viewport .tile.grid-sticker > img { transition: none; animation: none; }
+  .viewport .tile.grid-sticker > .grid-sticker-shine { display: none; transition: none; animation: none; }
+  .viewport:not(.is-dragging) .tile.grid-sticker:is(:hover, :focus-visible) > img { transform: none; }
+}
+/* Sensitivity takes priority over the decorative contour filter. */
+.viewport .tile.grid-sticker.is-sensitive > img { filter: blur(20px); }

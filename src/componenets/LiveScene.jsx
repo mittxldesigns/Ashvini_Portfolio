@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { transitionsSettled } from "../lib/viewTransition.js";
 
 // Live Spline scenes are heavy (runtime + WASM + scene file), so only load
@@ -180,7 +180,13 @@ function prepareScene(app) {
   app.requestRender();
 }
 
+// Per-scene framing trim so the live canvas lines up with the static cover
+// render it crossfades from: zoom multiplier, then dx/dy as the fraction of
+// the view the model moves right/down.
+const FRAMING = {};
+
 function fitSplineCamera(app, url) {
+  const trim = { zoom: 1, dx: 0, dy: 0, ...FRAMING[url.split("/")[3]] };
   const sceneCamera = app._camera;
   const cameraData = sceneCamera?.data;
   const quaternion = sceneCamera?.quaternion?.toArray?.();
@@ -259,23 +265,31 @@ function fitSplineCamera(app, url) {
   const aspect = Math.max(projectedWidth / projectedHeight, projectedHeight / projectedWidth);
   const margin = aspect > 1.6 ? 0.66 : 0.78;
 
-  cameraData.position = center.map((value, axis) => value - forward[axis] * targetDistance);
+  const place = (viewWidth, viewHeight, distance) => center.map((value, axis) =>
+    value - forward[axis] * distance - right[axis] * trim.dx * viewWidth + up[axis] * trim.dy * viewHeight
+  );
+  cameraData.position = place(0, 0, targetDistance);
   if (cameraData.type === "OrthographicCamera" && sceneCamera.orthoCamera) {
     const fittedZoom = margin * Math.min(
       (sceneCamera.right - sceneCamera.left) / projectedWidth,
       (sceneCamera.top - sceneCamera.bottom) / projectedHeight
     );
-    cameraData.orthographic.zoom = url.includes("3vQwrcy4RfqSLaaZ")
-      ? fittedZoom * 1.25
-      : fittedZoom;
+    const zoom = (url.includes("3vQwrcy4RfqSLaaZ") ? fittedZoom * 1.25 : fittedZoom) * trim.zoom;
+    cameraData.orthographic.zoom = zoom;
+    cameraData.position = place(
+      (sceneCamera.right - sceneCamera.left) / zoom,
+      (sceneCamera.top - sceneCamera.bottom) / zoom,
+      targetDistance
+    );
     sceneCamera.updateCameraState(cameraData);
     sceneCamera.orthoCamera.updateProjectionMatrix();
   } else if (cameraData.type === "PerspectiveCamera" && sceneCamera.perspCamera) {
     const radius = Math.hypot(projectedWidth / 2, projectedHeight / 2, (maxDepth - minDepth) / 2);
     const halfFov = (cameraData.perspective.fov * Math.PI) / 360;
-    const fittedDistance = radius / (Math.sin(halfFov) * margin);
+    const fittedDistance = radius / (Math.sin(halfFov) * margin * trim.zoom);
     cameraData.targetOffset = fittedDistance;
-    cameraData.position = center.map((value, axis) => value - forward[axis] * fittedDistance);
+    const view = 2 * fittedDistance * Math.tan(halfFov);
+    cameraData.position = place(view, view, fittedDistance);
     sceneCamera.updateCameraState(cameraData);
     sceneCamera.perspCamera.updateProjectionMatrix();
   } else return;
@@ -291,9 +305,11 @@ function fitSplineCamera(app, url) {
  */
 export default function LiveScene({ url, onLive }) {
   const canvasRef = useRef(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!url || !canRunLive()) return;
+    setLoading(true);
     let cancelled = false;
     let app = null;
     let resizeObserver = null;
@@ -346,9 +362,11 @@ export default function LiveScene({ url, onLive }) {
       if (!(await pauseWhileHidden(app, abortController.signal))) return;
       if (!(await waitForPaint(abortController.signal)) || cancelled) return;
       onLive(true);
+      setLoading(false);
       stopWatchingActivity = pauseWhenInactive(app, canvasRef.current);
     })().catch((err) => {
       if (!cancelled) {
+        setLoading(false);
         console.warn("Live scene unavailable:", err);
         resizeObserver?.disconnect();
         cancelAnimationFrame(resizeFrame);
@@ -361,6 +379,7 @@ export default function LiveScene({ url, onLive }) {
     return () => {
       cancelled = true;
       abortController.abort();
+      setLoading(false);
       onLive(false);
       stopWatchingActivity?.();
       canvas.removeEventListener("webglcontextlost", contextLost);
@@ -372,5 +391,12 @@ export default function LiveScene({ url, onLive }) {
   }, [url, onLive]);
 
   if (!url) return null;
-  return <canvas ref={canvasRef} className={`project-live${url.includes("3vQwrcy4RfqSLaaZ") ? " project-live--dna" : ""}`} />;
+  return (
+    <>
+      <canvas ref={canvasRef} className={`project-live${url.includes("3vQwrcy4RfqSLaaZ") ? " project-live--dna" : ""}`} />
+      <div className={`project-live-loading${loading ? " is-on" : ""}`} role="status" aria-live="polite">
+        {loading && <><span className="project-live-loading-dot" />Loading 3D</>}
+      </div>
+    </>
+  );
 }
