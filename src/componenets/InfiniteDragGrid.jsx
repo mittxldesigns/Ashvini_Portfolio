@@ -1,3 +1,4 @@
+import { isThumbnailPending } from "../lib/projectSticker.js";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -122,7 +123,7 @@ export default function InfiniteDragGrid() {
       return (
         <Tile
           key={key}
-          className={`${isIn ? (intro ? "tile is-in" : "tile is-in is-static") : "tile"} grid-sticker${item.nsfw ? " is-sensitive" : ""}`}
+          className={`${isIn ? (intro ? "tile is-in" : "tile is-in is-static") : "tile"} grid-sticker${isThumbnailPending(item) ? " is-thumbnail-pending" : ""}${item.nsfw ? " is-sensitive" : ""}`}
           data-id={item.id}
           href={primary ? `/portfolio/${item.id}` : undefined}
           aria-label={primary ? item.title : undefined}
@@ -135,7 +136,7 @@ export default function InfiniteDragGrid() {
           {isIn && (
             <img
               src={thumbSrc(item)}
-              alt={item.title}
+              alt={isThumbnailPending(item) ? "Thumbnail processing" : item.title}
               width={tile}
               height={tile}
               draggable={false}

@@ -7,6 +7,8 @@ import TransitionLink from "./TransitionLink.jsx";
 import ArtworkWarning from "./ArtworkWarning.jsx";
 import SketchLightboxImage from "./SketchLightboxImage.jsx";
 import { getSiteProfile } from "../data/siteProfile.js";
+import { defaultProjectView, parseSplineLink } from "../lib/splineLink.js";
+import "./SplineLinkField.css";
 import dnaHelixFull from "../assets/work/dna-helix-full.png";
 import {
   projects,
@@ -38,6 +40,7 @@ export default function ProjectDetail() {
   const [liveId, setLiveId] = useState(null);
   const [consentId, setConsentId] = useState(null);
   const [frameSelection, setFrameSelection] = useState({ projectId: null, index: 0 });
+  const [viewSelection, setViewSelection] = useState({ projectId: null, view: "media" });
   const projectId = project?.id;
   const onLive = useCallback(
     (live) => setLiveId(live ? projectId : null),
@@ -74,7 +77,7 @@ export default function ProjectDetail() {
     preloadHero(prev);
     preloadHero(next);
     const onKey = (e) => {
-      if (e.target.closest?.("input, textarea")) return;
+      if (e.target.closest?.("input, textarea, .project-view-modes, .project-frame-nav")) return;
       if (e.key === "ArrowDown" || e.key === "ArrowRight") select(next.id);
       else if (e.key === "ArrowUp" || e.key === "ArrowLeft") select(prev.id);
       else if (e.key === "Escape") close();
@@ -134,6 +137,12 @@ export default function ProjectDetail() {
   const frames = project.frames || [];
   const frameIndex = frameSelection.projectId === project.id ? frameSelection.index : 0;
   const frame = frames[frameIndex];
+  const sceneUrl = parseSplineLink(project.splineScene).url;
+  const view = sceneUrl ? (viewSelection.projectId === project.id ? viewSelection.view : defaultProjectView(project)) : "media";
+  const interactive = view === "interactive";
+  const renderedFrame = interactive && frame?.mediaType === "video"
+    ? { ...frame, mediaType: "image", video: null, full: frame.poster || frame.thumbWebp || project.thumbWebp }
+    : frame;
   const isCaseStudy = project.roles.length > 0;
   const isDna = project.slug === "dna-helix";
   const meta = [
@@ -183,6 +192,14 @@ export default function ProjectDetail() {
             </dl>
           )}
 
+          {sceneUrl && frames.length > 0 && <nav className="project-view-modes" aria-label="Project view">
+            <button type="button" aria-pressed={interactive} onClick={() => setViewSelection({ projectId: project.id, view: "interactive" })}>Interactive 3D</button>
+            <button type="button" aria-pressed={!interactive} onClick={() => setViewSelection({ projectId: project.id, view: "media" })}>Renders &amp; video</button>
+          </nav>}
+          {!interactive && frames.length > 1 && <nav className="project-frame-nav" aria-label="Project media">
+            <button type="button" onClick={() => setFrameSelection({ projectId: project.id, index: (frameIndex - 1 + frames.length) % frames.length })} aria-label="Previous project media">←</button><span>{frameIndex + 1} / {frames.length}</span><button type="button" onClick={() => setFrameSelection({ projectId: project.id, index: (frameIndex + 1) % frames.length })} aria-label="Next project media">→</button>
+          </nav>}
+
           <div className="project-inquiry reveal" style={{ "--d": "240ms" }}>
             <p>Need 3D for your next project?</p>
             <a
@@ -231,14 +248,14 @@ export default function ProjectDetail() {
             className={[
               "project-hero",
               !arrivedByMorph && "is-intro",
-              !frame && liveId === project.id && "is-live",
+              interactive && liveId === project.id && "is-live",
             ]
               .filter(Boolean)
               .join(" ")}
             style={{ viewTransitionName: "hero" }}
           >
             <div className="project-hero-motion">
-              {frame ? <SketchLightboxImage key={frame.full} item={{ ...project, ...frame, slug: `${project.slug}-${frameIndex}` }} /> : isDna ? (
+              {renderedFrame ? <SketchLightboxImage key={`${renderedFrame.full}-${view}`} item={{ ...project, ...renderedFrame, slug: `${project.slug}-${frameIndex}` }} /> : isDna ? (
                 <img
                   className="project-hero-full project-hero-full--dna is-loaded"
                   src={dnaHelixFull}
@@ -270,14 +287,11 @@ export default function ProjectDetail() {
                 </>
               )}
             </div>
-            {frames.length > 1 && <nav className="project-frame-nav" aria-label="Project images">
-              <button type="button" onClick={() => setFrameSelection({ projectId: project.id, index: (frameIndex - 1 + frames.length) % frames.length })} aria-label="Previous project image">←</button><span>{frameIndex + 1} / {frames.length}</span><button type="button" onClick={() => setFrameSelection({ projectId: project.id, index: (frameIndex + 1) % frames.length })} aria-label="Next project image">→</button>
-            </nav>}
-            <LiveScene
+            {interactive && <LiveScene
               key={project.id}
-              url={frame ? null : project.splineScene}
+              url={sceneUrl}
               onLive={onLive}
-            />
+            />}
           </div>
         </div>
       </div>

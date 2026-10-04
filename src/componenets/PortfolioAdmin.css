@@ -118,7 +118,8 @@
 .cms-page .cms-error { color: var(--cms-error); border-color: var(--cms-error); }
 .cms-page .cms-error button { margin: 8px 0 0 12px; }
 .cms-page .cms-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 24px 0 26px; padding: 0 0 18px; border-bottom: 1px solid var(--cms-line); }
-.cms-page .cms-tabs button { border-color: transparent; color: var(--cms-muted); padding: 11px 16px; }
+.cms-page .cms-tabs button { display: inline-flex; align-items: center; gap: 9px; border-color: transparent; color: var(--cms-muted); padding: 11px 16px; }
+.cms-page .cms-tabs button > span { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; min-height: 24px; padding: 0 6px; border-radius: 999px; background: color-mix(in srgb, currentColor 12%, transparent); font-size: 12px; font-variant-numeric: tabular-nums; }
 .cms-page .cms-tabs button[aria-pressed="true"] { color: var(--cms-primary-ink); background: var(--cms-accent); border-color: var(--cms-accent); }
 .cms-page.cms-paper .cms-tabs button[aria-pressed="true"] { color: var(--cms-ink); background: #eae2ce; border-color: var(--cms-control-line); }
 

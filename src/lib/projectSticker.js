@@ -12,3 +12,11 @@ export function reviewedSticker(project) {
   }
   return null;
 }
+
+const waitingThumbnail = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="560" height="560" viewBox="0 0 560 560"><rect x="220" y="190" width="120" height="120" rx="20" fill="none" stroke="#7695aa" stroke-width="2" stroke-dasharray="8 9"/><text x="280" y="350" text-anchor="middle" font-family="sans-serif" font-size="19" fill="#aaa">Preparing thumbnail</text></svg>')}`;
+export function gridThumbnail(project, original) {
+  return project.gridThumb || reviewedSticker(project) || (project.thumbnailStatus ? waitingThumbnail : original);
+}
+export function isThumbnailPending(project) {
+  return Boolean(project.thumbnailStatus && !project.gridThumb && !reviewedSticker(project));
+}

@@ -64,3 +64,8 @@
 }
 /* Sensitivity takes priority over the decorative contour filter. */
 .viewport .tile.grid-sticker.is-sensitive > img { filter: blur(20px); }
+
+.viewport .tile.grid-sticker.is-thumbnail-pending > img { filter: none; }
+.viewport .tile.is-thumbnail-pending > .grid-sticker-shine { display: none; }
+.viewport .tile.is-thumbnail-pending > .tile-title { opacity: 1; }
+.viewport .tile.grid-sticker.is-thumbnail-pending.is-sensitive > img { filter: blur(20px); }

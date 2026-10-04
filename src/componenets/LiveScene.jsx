@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { transitionsSettled } from "../lib/viewTransition.js";
+import { parseSplineLink } from "../lib/splineLink.js";
 
 // Live Spline scenes are heavy (runtime + WASM + scene file), so only load
 // them where they'll run well: fine pointer, enough memory, no data saver,
@@ -12,6 +13,12 @@ function canRunLive() {
   if (navigator.connection?.saveData) return false;
   if ((navigator.deviceMemory ?? 8) < 4) return false;
   return true;
+}
+
+function restrictionMessage() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return "Reduced motion is on. The render stays visible.";
+  if (navigator.connection?.saveData) return "Data saving is on. The render stays visible.";
+  return "The render stays visible on this screen. Interactive 3D loads on supported desktop devices.";
 }
 
 const idle = () =>
@@ -306,9 +313,12 @@ function fitSplineCamera(app, url) {
 export default function LiveScene({ url, onLive }) {
   const canvasRef = useRef(null);
   const [loading, setLoading] = useState(false);
+  const [failure, setFailure] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const sceneUrl = parseSplineLink(url).url;
 
   useEffect(() => {
-    if (!url || !canRunLive()) return;
+    if (!sceneUrl || !canRunLive()) return;
     setLoading(true);
     let cancelled = false;
     let app = null;
@@ -321,6 +331,8 @@ export default function LiveScene({ url, onLive }) {
     const contextLost = (event) => {
       event.preventDefault();
       onLive(false);
+      setLoading(false);
+      setFailure(true);
       stopWatchingActivity?.();
       stopWatchingActivity = null;
       app?.stop();
@@ -328,6 +340,7 @@ export default function LiveScene({ url, onLive }) {
     canvas.addEventListener("webglcontextlost", contextLost);
 
     (async () => {
+      if (!cancelled) setFailure(false);
       await transitionsSettled();
       await idle();
       if (cancelled || !(await waitForVisible(abortController.signal))) return;
@@ -338,13 +351,13 @@ export default function LiveScene({ url, onLive }) {
         renderer: "webgl",
         htmlContentMode: "none",
       });
-      await app.load(url);
+      await app.load(sceneUrl);
       if (cancelled) return;
       if (!(await pauseWhileHidden(app, abortController.signal))) return;
       capSplineResolution(app);
       prepareScene(app);
       app.setGlobalEvents(true);
-      const fitScene = () => fitSplineCamera(app, url);
+      const fitScene = () => fitSplineCamera(app, sceneUrl);
       const scheduleFit = () => {
         cancelAnimationFrame(resizeFrame);
         cancelAnimationFrame(settledResizeFrame);
@@ -367,6 +380,8 @@ export default function LiveScene({ url, onLive }) {
     })().catch((err) => {
       if (!cancelled) {
         setLoading(false);
+        setFailure(true);
+        onLive(false);
         console.warn("Live scene unavailable:", err);
         resizeObserver?.disconnect();
         cancelAnimationFrame(resizeFrame);
@@ -388,15 +403,18 @@ export default function LiveScene({ url, onLive }) {
       cancelAnimationFrame(settledResizeFrame);
       app?.dispose();
     };
-  }, [url, onLive]);
+  }, [sceneUrl, onLive, retry]);
 
   if (!url) return null;
+  if (!sceneUrl) return <p className="project-scene-status" role="status">The interactive scene link is unavailable. The render stays visible.</p>;
+  if (!canRunLive()) return <p className="project-scene-status" role="status">{restrictionMessage()}</p>;
   return (
     <>
       <canvas ref={canvasRef} className={`project-live${url.includes("3vQwrcy4RfqSLaaZ") ? " project-live--dna" : ""}`} />
       <div className={`project-live-loading${loading ? " is-on" : ""}`} role="status" aria-live="polite">
         {loading && <><span className="project-live-loading-dot" />Loading 3D</>}
       </div>
+      {failure && <div className="project-scene-status" role="status"><p>3D couldn’t load. The render stays visible.</p><button type="button" onClick={() => setRetry((value) => value + 1)}>Try 3D again</button></div>}
     </>
   );
 }

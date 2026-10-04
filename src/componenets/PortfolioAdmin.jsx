@@ -3,6 +3,8 @@ import "./PortfolioAdmin.css";
 import AdminTags from "./AdminTags.jsx";
 import VideoPlayer from "./VideoPlayer.jsx";
 import MediaUpload from "./MediaUpload.jsx";
+import SplineLinkField from "./SplineLinkField.jsx";
+import { parseSplineLink } from "../lib/splineLink.js";
 import { isFileTransfer, isTextEntry, transferFiles } from "../lib/mediaTransfer.js";
 import { applyRefinements } from "../lib/adminRefinement.js";
 import { previewBlob, validateUpload } from "../lib/mediaUpload.js";
@@ -112,7 +114,12 @@ export default function PortfolioAdmin({ initialContent = EMPTY }) {
   const rows = Array.isArray(content[section]) ? content[section] : [], item = rows[selected];
   const patchItem = (key, value) => { setContent((current) => ({ ...current, [section]: current[section].map((row, index) => index === selected ? { ...row, [key]: value } : row) })); setDirty(true); };
   const save = async () => {
-    const data = await request("/api/admin/content", "PUT", { expectedRevision: revision, content });
+    const projects = content.projects.map((project) => {
+      const scene = parseSplineLink(project.splineScene);
+      if (!scene.valid) throw new Error(`${project.title}: ${scene.error}`);
+      return { ...project, splineScene: scene.url || null };
+    });
+    const data = await request("/api/admin/content", "PUT", { expectedRevision: revision, content: { ...content, projects } });
     setRevision(data.revision); setContent(data.content); setDirty(false); setHistory((current) => [{ revision: data.revision, action: "save", created_at: data.createdAt }, ...current].slice(0, 30)); return data.revision;
   };
   const login = (event) => { event.preventDefault(); run("Signing in", async () => {
@@ -268,7 +275,7 @@ export default function PortfolioAdmin({ initialContent = EMPTY }) {
     </header>
     {error && <div className="cms-banner cms-error" role="alert">{error}<button onClick={() => { if (!dirty || window.confirm("Reload the saved draft and discard unsaved changes?")) run("Reloading draft…", loadDraft); }}>Reload saved draft</button></div>}
     {(notice || busy) && <p className="cms-banner" role="status">{busy || notice}</p>}
-    <nav className="cms-tabs" aria-label="Editor sections">{COLLECTIONS.map((name) => <button key={name} aria-pressed={section === name} disabled={!!busy} onClick={() => changeSection(name)}>{LABELS[name]}{name !== "profile" && <span>{content[name]?.length || 0}</span>}</button>)}</nav>
+    <nav className="cms-tabs" aria-label="Editor sections">{COLLECTIONS.map((name) => <button key={name} aria-label={name === "profile" ? LABELS[name] : `${LABELS[name]}, ${content[name]?.length || 0} ${name === "projects" ? "projects" : "items"}`} aria-pressed={section === name} disabled={!!busy} onClick={() => changeSection(name)}>{LABELS[name]}{name !== "profile" && <span>{content[name]?.length || 0}</span>}</button>)}</nav>
     <div className="cms-workspace" data-editing={mobileEditing || section === "profile"} inert={!!busy || !loaded || undefined}>
       {section === "profile" ? <section className="cms-panel cms-profile-group">
         <h2>Page text & profile</h2><p className="cms-muted">Choose a page, change the words, then save your draft.</p>
@@ -326,12 +333,13 @@ export default function PortfolioAdmin({ initialContent = EMPTY }) {
             {section === "sketches" && <><FormField label="Medium" value={item.medium} onChange={(value) => patchItem("medium", value)} /><FormField label="Artwork year" type="number" value={item.year} onChange={(value) => patchItem("year", value ? Number(value) : null)} /></>}
             <FormField label="Original post link (optional)" value={item.url} onChange={(value) => patchItem("url", value)} />
           </div>
+          {section === "projects" && <SplineLinkField value={item.splineScene} onChange={(value) => patchItem("splineScene", value)} disabled={!!busy} />}
           <div className="cms-checks"><label><input type="checkbox" checked={!!item.highlight} onChange={(event) => patchItem("highlight", event.target.checked)} /> Show in Highlights</label><label><input type="checkbox" checked={!!item.nsfw} onChange={(event) => patchItem("nsfw", event.target.checked)} /> Blur and warn before viewing</label></div>
           {item.nsfw && <FormField label="Viewing warning" value={item.contentWarning} onChange={(value) => patchItem("contentWarning", value)} />}
           {section === "projects" && <><AdminTags label="Tools" value={item.tools || []} onChange={(value) => patchItem("tools", value)} placeholder="Blender, Spline, After Effects" /><AdminTags label="Your roles" value={item.roles || []} onChange={(value) => patchItem("roles", value)} placeholder="3D modelling, Animation" /></>}
           <details className="cms-advanced"><summary>More details & links</summary>
             {ROW_TEXT.filter(([key]) => ["slug", "date", "dateLabel", "platform"].includes(key)).map(([key, label]) => { const field = key === "date" && section === "sketches" ? "dateISO" : key; return <FormField key={key} label={label} type={key === "date" ? "date" : "text"} value={key === "date" ? item[field]?.slice(0, 10) : item[field]} onChange={(value) => patchItem(field, key === "date" && !value ? null : value)} />; })}
-            {section === "projects" && <><FormField label="Spline scene URL" value={item.splineScene} onChange={(value) => patchItem("splineScene", value)} /><p className="cms-muted">Uploaded frames take priority over the interactive scene.</p><FormField label="External project URL" value={item.externalLink} onChange={(value) => patchItem("externalLink", value)} /><FormField label="Contra case-study URL" value={item.contraUrl} onChange={(value) => patchItem("contraUrl", value)} /><FormField label="Outcome" value={item.outcome} onChange={(value) => patchItem("outcome", value)} /><ArrayEditor label="Additional links" value={item.extraLinks} fields={[["label", "Label"], ["url", "URL"]]} onChange={(value) => patchItem("extraLinks", value)} /></>}
+            {section === "projects" && <><FormField label="External project URL" value={item.externalLink} onChange={(value) => patchItem("externalLink", value)} /><FormField label="Contra case-study URL" value={item.contraUrl} onChange={(value) => patchItem("contraUrl", value)} /><FormField label="Outcome" value={item.outcome} onChange={(value) => patchItem("outcome", value)} /><ArrayEditor label="Additional links" value={item.extraLinks} fields={[["label", "Label"], ["url", "URL"]]} onChange={(value) => patchItem("extraLinks", value)} /></>}
             <ArrayEditor label="Source credits" value={item.sources} fields={[["label", "Credit"], ["url", "URL"]]} onChange={(value) => patchItem("sources", value)} />
             <details><summary>Original media paths</summary><ArrayEditor label="Frames" value={item.frames} fields={[["asset", "Original media path"], ["thumbWebp", "Preview path"], ["mediaType", "Media type: image or video"], ["sourceUrl", "Source link"]]} onChange={(value) => updateFrames(value)} /></details>
             <button className="cms-text-button" onClick={() => { if (!window.confirm(`Remove “${item.title}” from the draft? The live site stays as it is until you publish.`)) return; setContent((current) => ({ ...current, [section]: current[section].filter((_, index) => index !== selected) })); setSelected(Math.max(0, selected - 1)); setDirty(true); setMobileEditing(false); }}>Remove this work from draft</button>
