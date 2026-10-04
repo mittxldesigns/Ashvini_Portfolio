@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import "./PortfolioAdmin.css";
 import AdminTags from "./AdminTags.jsx";
 import VideoPlayer from "./VideoPlayer.jsx";
+import MediaUpload from "./MediaUpload.jsx";
+import { isFileTransfer, isTextEntry, transferFiles } from "../lib/mediaTransfer.js";
 import { applyRefinements } from "../lib/adminRefinement.js";
 import { previewBlob, validateUpload } from "../lib/mediaUpload.js";
 import { galleryFrames, normalizeGalleryMedia } from "../lib/galleryMedia.js";
@@ -59,7 +61,7 @@ export default function PortfolioAdmin({ initialContent = EMPTY }) {
   const [refinements, setRefinements] = useState([]), [refineWarnings, setRefineWarnings] = useState([]);
   const publishRef = useRef(null), refineRef = useRef(null), editorRef = useRef(null), operationRef = useRef(false);
   const [setupToken, setSetupToken] = useState(consumeSetupFragment);
-  const emailRef = useRef(null), passwordRef = useRef(null), fileRef = useRef(null);
+  const emailRef = useRef(null), passwordRef = useRef(null);
   const request = useCallback(async (path, method = "GET", body, extra = {}) => {
     let response;
     try {
@@ -131,23 +133,44 @@ export default function PortfolioAdmin({ initialContent = EMPTY }) {
     };
     xhr.send(file);
   });
-  const upload = (file, asFrame = false) => run("Preparing preview…", async () => {
-    if (!file || !item) return;
-    const mime = validateUpload(file);
-    const preview = await previewBlob(file, mime);
-    const metadata = await request("/api/admin/media", "POST", { filename: file.name, mime, size: file.size, previewMime: preview.blob.type, previewSize: preview.blob.size });
-    await putFile(`/api/admin/media/${metadata.id}/original`, file, mime, "Uploading original");
-    await putFile(`/api/admin/media/${metadata.id}/preview`, preview.blob, preview.blob.type, "Uploading preview");
-    const isVideo = mime.startsWith("video/");
-    const frame = { asset: metadata.original, full: metadata.original, video: isVideo ? metadata.original : null, thumbWebp: metadata.preview, poster: metadata.preview, width: preview.width, height: preview.height, nsfw: Boolean(item.nsfw), mediaType: isVideo ? "video" : "image" };
-    setContent((current) => ({ ...current, [section]: current[section].map((row, index) => {
-      if (index !== selected) return row;
-      const existing = galleryFrames(row);
-      const frames = (asFrame ? [...existing, frame] : [frame, ...existing.slice(1)]).map((entry, i) => ({ ...entry, position: i + 1 }));
-      return normalizeGalleryMedia({ ...row, mediaId: metadata.id, frames, sourceMediaType: isVideo ? "video" : "image", videoStatus: isVideo ? "available" : null }, section === "projects");
-    }) })); setDirty(true); setNotice("Original and preview uploaded. Save and publish to show this file on the site.");
-    if (fileRef.current) fileRef.current.value = "";
+  const uploadFiles = (files, asFrame = true) => run("Preparing upload…", async () => {
+    if (!files.length || !item) return;
+    if (files.length > 10) throw new Error("Add up to 10 files at a time.");
+    if (!asFrame && files.length > 1) throw new Error("Choose one cover, or use Add to gallery for several files.");
+    const prepared = files.map((file) => ({ file, mime: validateUpload(file) }));
+    let completed = 0;
+    for (const { file, mime } of prepared) {
+      const position = files.length > 1 ? `${completed + 1}/${files.length} · ` : "";
+      try {
+        setBusy(`${position}Preparing ${file.name || "image"}…`);
+        const preview = await previewBlob(file, mime);
+        const metadata = await request("/api/admin/media", "POST", { filename: file.name || "pasted-image.png", mime, size: file.size, previewMime: preview.blob.type, previewSize: preview.blob.size });
+        await putFile(`/api/admin/media/${metadata.id}/original`, file, mime, `${position}Uploading original`);
+        await putFile(`/api/admin/media/${metadata.id}/preview`, preview.blob, preview.blob.type, `${position}Uploading preview`);
+        const isVideo = mime.startsWith("video/");
+        const frame = { asset: metadata.original, full: metadata.original, video: isVideo ? metadata.original : null, thumbWebp: metadata.preview, poster: metadata.preview, width: preview.width, height: preview.height, nsfw: Boolean(item.nsfw), mediaType: isVideo ? "video" : "image" };
+        setContent((current) => ({ ...current, [section]: current[section].map((row, index) => {
+          if (index !== selected) return row;
+          const existing = galleryFrames(row);
+          const frames = (asFrame ? [...existing, frame] : [frame, ...existing.slice(1)]).map((entry, i) => ({ ...entry, position: i + 1 }));
+          return normalizeGalleryMedia({ ...row, mediaId: metadata.id, frames }, section === "projects");
+        }) }));
+        completed++; setDirty(true);
+      } catch (failure) {
+        throw new Error(`${completed ? `${completed} of ${files.length} files added to your draft. ` : ""}${file.name || "This file"}: ${failure.message} Remaining files were not uploaded.`);
+      }
+    }
+    setNotice(`${completed === 1 ? "File added" : `${completed} files added`} to your draft. Save and publish when ready.`);
   });
+  const pasteMedia = (event) => {
+    if (isTextEntry(event.target) || event.target.closest?.("dialog")) return;
+    const files = transferFiles(event.clipboardData);
+    if (!files.length) return;
+    event.preventDefault();
+    if (busy || !loaded) return;
+    if (!item || section === "profile" || (!mobileEditing && window.matchMedia("(max-width: 760px)").matches)) { setError("Open a piece first, then paste an image to add it to the gallery."); return; }
+    uploadFiles(files);
+  };
   const uploadPoster = (file) => run("Preparing thumbnail…", async () => {
     if (!file || !item) return;
     const mime = validateUpload(file);
@@ -231,7 +254,9 @@ export default function PortfolioAdmin({ initialContent = EMPTY }) {
     {!session.initialized && !setupToken && <p className="cms-muted">Use your private first-password link to activate this account.</p>}
     <p className="cms-muted">Password recovery is handled privately by the site administrator.</p>
   </form></main>;
-  return <main className={`cms-page${section === "sketches" ? " cms-paper" : ""}`}>
+  return <main className={`cms-page${section === "sketches" ? " cms-paper" : ""}`} onPaste={pasteMedia}
+    onDragOver={(event) => { if (isFileTransfer(event.dataTransfer)) { event.preventDefault(); event.dataTransfer.dropEffect = "none"; } }}
+    onDrop={(event) => { if (isFileTransfer(event.dataTransfer)) { event.preventDefault(); if (!busy) setError("Drop files into a media upload area so they go to the right place."); } }}>
     <header className="cms-header">
       <div className="cms-header-main"><a className="cms-brand" href="/" target="_blank" rel="noreferrer">Ashvini</a><div><h1 className="cms-heading">Your studio</h1><p className="cms-status" role="status">{!loaded ? "Loading your saved work…" : dirty ? "Unsaved changes" : revision !== publishedRevision ? "Draft saved · ready to publish" : "Everything is live"}</p></div></div>
       <div className="cms-actions">
@@ -249,7 +274,7 @@ export default function PortfolioAdmin({ initialContent = EMPTY }) {
         <h2>Page text & profile</h2><p className="cms-muted">Choose a page, change the words, then save your draft.</p>
         <nav className="cms-page-tabs" aria-label="Pages">{Object.keys(PAGE_GROUPS).map((page) => <button aria-pressed={profilePage === page} key={page} onClick={() => setProfilePage(page)}>{page === "editorial" ? "Social" : page === "sketches" ? "Sketchbook" : page[0].toUpperCase() + page.slice(1)}</button>)}</nav>
         <div className="cms-fields">{PROFILE_TEXT.filter(([key]) => PAGE_GROUPS[profilePage].includes(key)).map(([key, label]) => <FormField key={key} label={label} value={content.profile[key]} onChange={(value) => patchProfile(key, value)} multiline={/(Description|Bio|Intro|Note)$/.test(key)} />)}</div>
-        {profilePage === "about" && <><label className="cms-upload"><span>Change profile photo</span><input type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; uploadAvatar(file); }} /></label><AdminTags label="Skills" value={content.profile.skills || []} onChange={(value) => patchProfile("skills", value)} placeholder="Spline, Blender, Photoshop" /></>}
+        {profilePage === "about" && <><MediaUpload label="Profile photo" accept="image/jpeg,image/png,image/webp,image/avif,image/gif" disabled={!!busy} onFiles={(files) => uploadAvatar(files[0])} hint="Choose, drop or paste one image." /><AdminTags label="Skills" value={content.profile.skills || []} onChange={(value) => patchProfile("skills", value)} placeholder="Spline, Blender, Photoshop" /></>}
         {profilePage === "home" && <label className="cms-field"><span>Featured work on Home</span><select value={content.profile.homeHeroProjectId || ""} onChange={(event) => patchProfile("homeHeroProjectId", event.target.value ? Number(event.target.value) : null)}><option value="">Rotate through my work</option>{content.projects.map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}</select></label>}
         <details className="cms-advanced"><summary>Experience, credits & gallery settings</summary>
         <ArrayEditor label="Experience" value={content.profile.experience} fields={[["years", "Years"], ["org", "Organization"], ["role", "Role"], ["note", "Description"], ["side", "Section"]]} onChange={(value) => patchProfile("experience", value)} />
@@ -280,17 +305,18 @@ export default function PortfolioAdmin({ initialContent = EMPTY }) {
         <section className="cms-panel" ref={editorRef} tabIndex={-1}>{item ? <>
           <button className="cms-back-to-list" onClick={() => setMobileEditing(false)}>← All {LABELS[section]}</button>
           <div className="cms-item-head"><h2>{item.title}</h2><div className="cms-media-actions"><button disabled={selected === 0} onClick={() => moveWork(-1)} aria-label="Move work earlier">↑</button><button disabled={selected === rows.length - 1} onClick={() => moveWork(1)} aria-label="Move work later">↓</button></div></div>
+          <MediaUpload label={selectedFrame ? "Replace cover image / video" : "Add a cover image or video"} accept={ACCEPT_MEDIA} disabled={!!busy} onFiles={(files) => uploadFiles(files, false)} hint="One cover file. Images up to 30 MB; videos up to 80 MB. MP4 with H.264 works best. Originals are kept unchanged.">
           <div className="cms-media-stage">
             {selectedFrame ? selectedFrame.mediaType === "video" ? <VideoPlayer src={selectedFrame.video || selectedFrame.full || selectedFrame.asset} poster={selectedFrame.poster || selectedFrame.thumbWebp} title={`Preview ${item.title}`} width={selectedFrame.width} height={selectedFrame.height} /> : <img className="cms-preview" src={selectedFrame.thumbWebp || item.thumbWebp} alt={item.title} /> : <div className="cms-empty"><strong>Start with your work.</strong><p>Add an image or a video render. You can arrange more frames below.</p></div>}
           </div>
-          <label className="cms-upload"><span>{selectedFrame ? "Replace cover image / video" : "Upload an image or video"}</span><input ref={fileRef} type="file" accept={ACCEPT_MEDIA} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; upload(file); }} /><small>Images up to 30 MB. Videos up to 80 MB. MP4 with H.264 works best; WebM and playable MOV files also work. Your original is kept unchanged.</small></label>
-          {selectedFrame?.mediaType === "video" && <label className="cms-upload cms-upload-help"><span>Upload thumbnail</span><input type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; uploadPoster(file); }} /><small>Choose the cover shown in your work grid and before the video plays. Transparent images keep their transparency.</small></label>}
+          </MediaUpload>
+          {selectedFrame?.mediaType === "video" && <MediaUpload label="Video thumbnail" accept="image/jpeg,image/png,image/webp,image/avif" disabled={!!busy} onFiles={(files) => uploadPoster(files[0])} hint="An image shown before playback. Changing this leaves the video intact; transparent images keep their transparency." />}
           {frames.length > 0 && <div className="cms-frame-strip" aria-label="Gallery frames">{frames.map((frame, index) => <div className="cms-frame" key={`${frame.full || frame.asset}-${index}`}>
             <img src={frame.thumbWebp || frame.poster} alt={`Frame ${index + 1}`} loading="lazy" />
             <span className="cms-frame-cover">{index === 0 ? "Cover" : `Frame ${index + 1}`}{frame.mediaType === "video" ? " · Video" : ""}</span>
             <div className="cms-frame-actions"><button disabled={index === 0} onClick={() => moveFrame(index, index - 1)} aria-label={`Move frame ${index + 1} earlier`}>←</button><button disabled={index === frames.length - 1} onClick={() => moveFrame(index, index + 1)} aria-label={`Move frame ${index + 1} later`}>→</button>{index > 0 && <button onClick={() => moveFrame(index, 0)}>Make cover</button>}{frames.length > 1 && <button onClick={() => updateFrames(frames.filter((_, i) => i !== index))} aria-label={`Remove frame ${index + 1}`}>×</button>}</div>
           </div>)}</div>}
-          <label className="cms-upload cms-upload-help"><span>+ Add another image or video</span><input type="file" accept={ACCEPT_MEDIA} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; upload(file, true); }} /></label>
+          <MediaUpload label="Add to gallery" accept={ACCEPT_MEDIA} multiple disabled={!!busy} onFiles={uploadFiles} hint="Add up to 10 images or videos together, in the order selected. You can also paste an image while viewing this piece. Text fields keep normal paste." />
           <div className="cms-fields">
             <FormField label="Title" value={item.title} onChange={(value) => patchItem("title", value)} />
             <label className="cms-field"><span>{section === "sketches" ? "Sketchbook section" : "Category"}</span><select value={item[section === "sketches" ? "chapter" : "category"] || ""} onChange={(event) => patchItem(section === "sketches" ? "chapter" : "category", event.target.value)}><option value="" disabled>Choose where this belongs</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}</select></label>

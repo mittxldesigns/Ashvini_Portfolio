@@ -301,3 +301,13 @@
 @media (prefers-reduced-motion: reduce) {
   .cms-page *, .cms-page *::before, .cms-page *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+.cms-page .cms-dropzone { transition: background-color 120ms ease, border-color 120ms ease; }
+.cms-page .cms-dropzone:focus-visible { outline: 2px solid var(--cms-focus); outline-offset: 3px; }
+.cms-page .cms-dropzone.is-drag-over { border: 2px solid var(--cms-accent); padding: 17px; background: var(--cms-selected); }
+.cms-page .cms-dropzone[aria-disabled="true"] { opacity: .6; }
+.cms-page .cms-drop-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.cms-page .cms-dropzone .cms-media-stage { margin: 0; }
+.cms-page .cms-dropzone input[hidden] { display: none; }
+@media (max-width: 760px) { .cms-page .cms-dropzone.is-drag-over { padding: 15px; } }
+@media (prefers-reduced-motion: reduce) { .cms-page .cms-dropzone { transition: none; } }
