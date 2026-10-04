@@ -22,3 +22,9 @@ test("every video frame requires its own preview before publication",async()=>{
  const content=seed();content.projects[0].frames=[{asset:"/assets/still.webp",thumbWebp:"/assets/still-thumb.webp",mediaType:"image"},{asset:"/assets/render.mp4",mediaType:"video"}];
  await assert.rejects(validateSeed(content),/thumbnail for every video/);
 });
+test("interactive scenes require a Spline code export rather than a public or community page",async()=>{
+ const content=seed();content.projects[0].splineScene="https://my.spline.design/public-view/";
+ await assert.rejects(validateSeed(content),/scene.splinecode/);
+ content.projects[0].splineScene="https://prod.spline.design/ABC123/scene.splinecode";
+ assert.equal((await validateSeed(content)).projects[0].splineScene,content.projects[0].splineScene);
+});

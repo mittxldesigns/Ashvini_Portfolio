@@ -136,7 +136,7 @@ export default function InfiniteDragGrid() {
           {isIn && (
             <img
               src={thumbSrc(item)}
-              alt={isThumbnailPending(item) ? "Thumbnail processing" : item.title}
+              alt={isThumbnailPending(item) ? item.thumbnailStatus === "failed" ? "Thumbnail unavailable" : "Thumbnail processing" : item.title}
               width={tile}
               height={tile}
               draggable={false}

@@ -11,11 +11,13 @@ test('editor categories, batched AI review and publishing preserve draft boundar
   dom.window.HTMLDialogElement.prototype.showModal = function () { this.open = true; };
   dom.window.HTMLDialogElement.prototype.close = function () { this.open = false; };
   const content = { schemaVersion:1, profile:{ name:'Ashvini', editorialCategories:[],sketchChapters:[] }, projects:[{id:1,slug:'render',title:'Render',description:'A model.',roles:[],tools:[],frames:[]}],editorial:[],sketches:[] };
-  const calls = [], originals = new Map();
+  const calls = [], originals = new Map(); let paired = false;
   const fetch = async (url, init={}) => {
     const body = init.body ? JSON.parse(init.body) : null; calls.push({url,body});
     if (url === '/api/auth/session') return Response.json({authenticated:true,csrfToken:'test'});
     if (url === '/api/admin/content') return Response.json({content:body?.content || content,revision:body?3:2,publishedRevision:2,history:[]});
+    if (url === '/api/admin/helper/pairing') { paired = true; return Response.json({pairingCode:'ABCDEF0123',expiresAt:Math.floor(Date.now()/1000)+600}); }
+    if (url === '/api/admin/helper') return paired ? Response.json({error:{message:'Temporary status outage'}},{status:503}) : Response.json({devices:[],jobs:[],download:{ready:true,url:'/test.exe'}});
     if (url === '/api/admin/refine') return Response.json(body.cursor === 0 ? {suggestions:[{path:['projects',0,'description'],before:'A model.',after:'A 3D model.'}],warnings:[],nextCursor:1,reviewedFields:1,totalFields:2} : {suggestions:[],warnings:[],nextCursor:null,reviewedFields:2,totalFields:2});
     return Response.json({error:{message:'Draft changed elsewhere. Reload before publishing.'}}, {status:409});
   };
@@ -32,6 +34,10 @@ test('editor categories, batched AI review and publishing preserve draft boundar
     root=createRoot(document.getElementById('root')); await flush(()=>root.render(React.createElement(Admin)));
     const button = (text) => [...document.querySelectorAll('button')].find(el=>el.textContent===text);
     assert.equal(document.querySelector('.cms-workspace').hasAttribute('inert'),false);
+    await flush(()=>button('Connect a PC').click());
+    assert.equal(document.querySelector('.cms-helper-pair input').value,'ABCDEF0123');
+    assert.match(document.querySelector('.cms-helper-panel [role=alert]').textContent,/Change saved/);
+    assert.equal(calls.filter(c=>c.url==='/api/admin/content'&&c.body).length,0);
     const category = [...document.querySelectorAll('label')].find(el=>el.textContent.startsWith('Category')).querySelector('select');
     await flush(()=>{category.value='Animation';category.dispatchEvent(new dom.window.Event('change',{bubbles:true}));});
     assert.equal(button('Save draft').disabled,false);

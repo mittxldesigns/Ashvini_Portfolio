@@ -1,5 +1,7 @@
+import { parseSplineLink } from "../../src/lib/splineLink.js";
 import { normalizeGalleryMedia } from "../../src/lib/galleryMedia.js";
 import { HttpError, json, now, readJson } from "./security";
+import { overlayThumbnails } from "./helper";
 
 export type Value = string | number | boolean | null | Value[] | {[key:string]:Value};
 export type RecordValue = {[key:string]:Value};
@@ -105,6 +107,11 @@ export function validateContent(raw: unknown, options: {publishing?:boolean} = {
       for (const key of ["width","height","year","carouselCount"]) if (result[key] !== undefined && result[key] !== null && (!Number.isSafeInteger(result[key]) || Number(result[key]) < 1)) bad(`${key} must be a positive whole number.`);
       if (result.mediaType && !["image","video"].includes(String(result.mediaType))) bad("Choose image or video as the media type.");
       objectList(result.sources,"Source credits"); objectList(result.extraLinks,"Project links");
+      if (result.splineScene) {
+        const scene = parseSplineLink(result.splineScene);
+        if (!scene.valid) bad(`${result.slug}: ${scene.error}`);
+        result.splineScene = scene.url;
+      }
       const frames = objectList(result.frames,"Gallery frames");
       for (const frame of frames) {
         if (frame.nsfw !== undefined && typeof frame.nsfw !== "boolean") bad("Frame sensitivity must be selected or unselected.");
@@ -145,7 +152,7 @@ export const state = (env: Env) => env.DB.prepare(`SELECT * FROM cms_state WHERE
 export async function published(env: Env): Promise<Content | null> {
   const row = await env.DB.prepare(`SELECT published_json,published_revision FROM cms_state WHERE id=1`).first<{published_json:string|null;published_revision:number|null}>();
   if (!row?.published_json) return null;
-  return {...JSON.parse(row.published_json),revision:row.published_revision};
+  return overlayThumbnails(env,{...JSON.parse(row.published_json),revision:row.published_revision});
 }
 export function mediaIds(content: Content) {
   const ids = new Set<string>();

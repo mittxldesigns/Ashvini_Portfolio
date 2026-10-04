@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { projects, preloadHero } from "../data/projects.js";
+import { projects, preloadHero, thumbSrc } from "../data/projects.js";
 
 const DRAG_SLOP = 5;
 const COPIES = [0, 1, 2];
@@ -280,8 +280,7 @@ export default function ProjectStrip({ activeId, onSelect }) {
               }}
             >
               <picture>
-                <source srcSet={p.thumbAvif} type="image/avif" />
-                <img src={p.thumbWebp} alt="" width="96" height="96" loading="lazy" decoding="async" draggable={false} />
+                <img src={thumbSrc(p)} alt="" width="96" height="96" loading="lazy" decoding="async" draggable={false} />
               </picture>
             </Item>
           );

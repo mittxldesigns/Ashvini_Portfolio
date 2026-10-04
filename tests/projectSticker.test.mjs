@@ -16,3 +16,9 @@ test('queued opaque thumbnails use an honest placeholder until the derived cutou
  assert.equal(isThumbnailPending({...pending,gridThumb:'/helper-media/result.png'}),false);
  assert.equal(gridThumbnail({},'/original-transparent.webp'),'/original-transparent.webp');
 });
+
+test('a reviewed full-view thumbnail wins over an automatic cutout of the old cropped source',()=>{
+ const p={full:'/media/97d5d9d9-bc64-47bf-b15c-975a4ec4e485/original',thumbWebp:'/media/97d5d9d9-bc64-47bf-b15c-975a4ec4e485/preview',gridThumb:'/helper-media/old-crop.png',thumbnailStatus:'ready'};
+ assert.equal(gridThumbnail(p,p.thumbWebp),'/media/stickers/sampler-full-v1.webp');
+ assert.equal(gridThumbnail({...p,thumbWebp:'/media/new-cover/preview'},p.thumbWebp),p.gridThumb);
+});

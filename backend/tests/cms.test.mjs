@@ -18,8 +18,10 @@ const jsonBody = async (response) => response.json();
 before(async () => {
   mf = new Miniflare(convertV4MiniflareOptions({modules:true,compatibilityDate:"2026-10-01",compatibilityFlags:["nodejs_compat"],script:await readFile(new URL("../.build/index.js",import.meta.url),"utf8"),d1Databases:["DB"],r2Buckets:["MEDIA"],bindings:{OWNER_EMAIL:"owner@example.test",PAGES_ORIGIN:"https://pages.example.test",SITE_ORIGIN:origin,PROXY_ENABLED:"false",BOOTSTRAP_TOKEN_HASH:createHash("sha256").update(fixtureToken).digest("hex"),BOOTSTRAP_EXPIRES_AT:String(Math.floor(Date.now()/1000)+3600)}}));
   db = await mf.getD1Database("DB");
-  const schema = (await readFile(new URL("../migrations/0001_owner_cms.sql",import.meta.url),"utf8")).replace(/^--.*$/gm,"");
-  await db.batch(schema.split(";").filter((sql) => sql.trim()).map((sql) => db.prepare(sql)));
+  for (const file of ["0001_owner_cms.sql","0003_thumbnail_helper.sql"]) {
+    const schema = (await readFile(new URL(`../migrations/${file}`,import.meta.url),"utf8")).replace(/^--.*$/gm,"");
+    await db.batch(schema.split(";").filter((sql) => sql.trim()).map((sql) => db.prepare(sql)));
+  }
   await db.prepare("INSERT INTO cms_state(id,draft_json,updated_at) VALUES (1,?,0)").bind(JSON.stringify(seed)).run();
 });
 after(async () => { await mf?.dispose(); });

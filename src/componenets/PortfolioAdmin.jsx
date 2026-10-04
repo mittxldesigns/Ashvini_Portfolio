@@ -4,6 +4,7 @@ import AdminTags from "./AdminTags.jsx";
 import VideoPlayer from "./VideoPlayer.jsx";
 import MediaUpload from "./MediaUpload.jsx";
 import SplineLinkField from "./SplineLinkField.jsx";
+import HelperPanel from "./HelperPanel.jsx";
 import { parseSplineLink } from "../lib/splineLink.js";
 import { isFileTransfer, isTextEntry, transferFiles } from "../lib/mediaTransfer.js";
 import { applyRefinements } from "../lib/adminRefinement.js";
@@ -58,6 +59,7 @@ export default function PortfolioAdmin({ initialContent = EMPTY }) {
   const [revision, setRevision] = useState(0), [publishedRevision, setPublishedRevision] = useState(null);
   const [history, setHistory] = useState([]), [section, setSection] = useState("projects"), [selected, setSelected] = useState(0);
   const [dirty, setDirty] = useState(false), [busy, setBusy] = useState(""), [error, setError] = useState(""), [notice, setNotice] = useState("");
+  const [thumbnailWarning, setThumbnailWarning] = useState("");
   const [loaded, setLoaded] = useState(false), [search, setSearch] = useState(""), [filter, setFilter] = useState("all");
   const [mobileEditing, setMobileEditing] = useState(false), [profilePage, setProfilePage] = useState("about");
   const [refinements, setRefinements] = useState([]), [refineWarnings, setRefineWarnings] = useState([]);
@@ -120,7 +122,7 @@ export default function PortfolioAdmin({ initialContent = EMPTY }) {
       return { ...project, splineScene: scene.url || null };
     });
     const data = await request("/api/admin/content", "PUT", { expectedRevision: revision, content: { ...content, projects } });
-    setRevision(data.revision); setContent(data.content); setDirty(false); setHistory((current) => [{ revision: data.revision, action: "save", created_at: data.createdAt }, ...current].slice(0, 30)); return data.revision;
+    setThumbnailWarning(data.thumbnailQueueWarning || ""); setRevision(data.revision); setContent(data.content); setDirty(false); setHistory((current) => [{ revision: data.revision, action: "save", created_at: data.createdAt }, ...current].slice(0, 30)); return data.revision;
   };
   const login = (event) => { event.preventDefault(); run("Signing in", async () => {
     const password = passwordRef.current?.value || "", email = emailRef.current?.value || "";
@@ -239,7 +241,7 @@ export default function PortfolioAdmin({ initialContent = EMPTY }) {
   const publish = () => run("Publishing…", async () => {
     const next = dirty ? await save() : revision;
     const data = await request("/api/admin/publish", "POST", { expectedRevision: next });
-    setPublishedRevision(next); setHistory((current) => current.map((entry) => entry.revision === next ? { ...entry, published_at: data.publishedAt } : entry));
+    setThumbnailWarning(data.thumbnailQueueWarning || ""); setPublishedRevision(next); setHistory((current) => current.map((entry) => entry.revision === next ? { ...entry, published_at: data.publishedAt } : entry));
     setNotice("Published. Your website is up to date."); publishRef.current?.close();
   });
   const visibleRows = rows.map((row, index) => ({ row, index })).filter(({ row }) =>
@@ -276,6 +278,8 @@ export default function PortfolioAdmin({ initialContent = EMPTY }) {
     {error && <div className="cms-banner cms-error" role="alert">{error}<button onClick={() => { if (!dirty || window.confirm("Reload the saved draft and discard unsaved changes?")) run("Reloading draft…", loadDraft); }}>Reload saved draft</button></div>}
     {(notice || busy) && <p className="cms-banner" role="status">{busy || notice}</p>}
     <nav className="cms-tabs" aria-label="Editor sections">{COLLECTIONS.map((name) => <button key={name} aria-label={name === "profile" ? LABELS[name] : `${LABELS[name]}, ${content[name]?.length || 0} ${name === "projects" ? "projects" : "items"}`} aria-pressed={section === name} disabled={!!busy} onClick={() => changeSection(name)}>{LABELS[name]}{name !== "profile" && <span>{content[name]?.length || 0}</span>}</button>)}</nav>
+    {thumbnailWarning && <p role="status" className="cms-banner">{thumbnailWarning}</p>}
+    {section === "projects" && loaded && <HelperPanel request={request} projects={content.projects} />}
     <div className="cms-workspace" data-editing={mobileEditing || section === "profile"} inert={!!busy || !loaded || undefined}>
       {section === "profile" ? <section className="cms-panel cms-profile-group">
         <h2>Page text & profile</h2><p className="cms-muted">Choose a page, change the words, then save your draft.</p>
