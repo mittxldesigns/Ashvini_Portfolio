@@ -3,7 +3,7 @@
 export const faq = [
   {
     q: "Who is Ashvini Kumar?",
-    a: "Ashvini Kumar is a 3D artist and social & editorial designer based in Lucknow, India. He builds product models and interactive 3D scenes for the web, and for six years has designed thumbnails, covers and social posts for pop-culture publishers Animated Times and FandomWire.",
+    a: "Ashvini Kumar is a 3D artist and social & editorial designer based in Delhi, India. He builds product models and interactive 3D scenes for the web, and for six years has designed thumbnails, covers and social posts for pop-culture publishers Animated Times and FandomWire.",
   },
   {
     q: "Which companies has Ashvini Kumar worked with?",
